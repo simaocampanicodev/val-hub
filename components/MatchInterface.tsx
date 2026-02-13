@@ -1,0 +1,582 @@
+
+import React, { useEffect, useState, useRef } from 'react';
+import { useGame } from '../context/GameContext';
+import { MatchPhase } from '../types';
+import Card from './ui/Card';
+import Button from './ui/Button';
+import { getRankInfo } from '../services/gameService';
+import { MAP_IMAGES } from '../constants';
+import { Trophy, Clock, Ban, AlertTriangle, MessageSquare, Send, ThumbsUp, Flag, X } from 'lucide-react';
+
+const MatchInterface = () => {
+  const { matchState, acceptMatch, draftPlayer, vetoMap, reportResult, sendChatMessage, currentUser, resetMatch, forceTimePass, handleBotAction, themeMode, isAdmin, commendPlayer, submitReport, allUsers } = useGame();
+  const [timeLeft, setTimeLeft] = useState(0);
+  
+  // Mobile UI State
+  const [activeTab, setActiveTab] = useState<'game' | 'chat'>('game');
+
+  // Reporting State
+  const [scoreA, setScoreA] = useState<string>('');
+  const [scoreB, setScoreB] = useState<string>('');
+  const [reportError, setReportError] = useState<string | null>(null);
+
+  // Reputation & Modal State
+  const [interactedUsers, setInteractedUsers] = useState<string[]>([]);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportTargetId, setReportTargetId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState<string>('Toxic Behavior');
+
+  // Chat State
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [matchState?.chat, activeTab]);
+
+  // Bot Automation Hook
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    if (matchState && (matchState.phase === MatchPhase.DRAFT || matchState.phase === MatchPhase.VETO)) {
+        timer = setTimeout(() => {
+            handleBotAction();
+        }, 1500); 
+    }
+    return () => clearTimeout(timer);
+  }, [matchState, handleBotAction]);
+
+  useEffect(() => {
+    if (matchState?.phase === MatchPhase.LIVE && matchState.startTime) {
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - matchState.startTime!;
+        setTimeLeft(elapsed);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [matchState]);
+
+  if (!matchState) return null;
+
+  const isCaptain = matchState.captainA?.id === currentUser.id || matchState.captainB?.id === currentUser.id;
+  const isMyTurn = (matchState.turn === 'A' && matchState.captainA?.id === currentUser.id) ||
+                   (matchState.turn === 'B' && matchState.captainB?.id === currentUser.id);
+  const isFinished = matchState.phase === MatchPhase.FINISHED;
+
+  const formatTime = (ms: number) => {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
+  const minutesPassed = Math.floor(timeLeft / 60000);
+  const canReport = minutesPassed >= 20;
+
+  // Determine Result Title & Color
+  const userTeam = matchState.teamA.some(u => u.id === currentUser.id) ? 'A' : (matchState.teamB.some(u => u.id === currentUser.id) ? 'B' : null);
+  let resultTitle = "MATCH ENDED";
+  let resultColor = themeMode === 'dark' ? 'text-white' : 'text-black';
+  
+  if (userTeam && matchState.winner) {
+      if (matchState.winner === userTeam) {
+          resultTitle = "VICTORY";
+          resultColor = "text-emerald-500 drop-shadow-[0_0_35px_rgba(16,185,129,0.4)]";
+      } else {
+          resultTitle = "DEFEAT";
+          resultColor = "text-rose-500 drop-shadow-[0_0_35px_rgba(225,29,72,0.4)]";
+      }
+  }
+
+  const handleReportSubmit = () => {
+      const sA = parseInt(scoreA);
+      const sB = parseInt(scoreB);
+
+      if (isNaN(sA) || isNaN(sB)) {
+          setReportError("Please enter valid numbers.");
+          return;
+      }
+      
+      if (sA < 0 || sB < 0) {
+          setReportError("Scores cannot be negative.");
+          return;
+      }
+
+      const winner = Math.max(sA, sB);
+      const loser = Math.min(sA, sB);
+
+      if (winner < 13) {
+          setReportError("A team must win at least 13 rounds.");
+          return;
+      }
+
+      setReportError(null);
+      const result = reportResult(sA, sB);
+      if (!result.success) {
+          setReportError(result.message || "Error submitting report");
+      }
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (chatInput.trim()) {
+          sendChatMessage(chatInput);
+          setChatInput('');
+      }
+  };
+
+  const handleCommend = (targetId: string) => {
+      if (interactedUsers.includes(targetId)) return;
+      commendPlayer(targetId);
+      setInteractedUsers(prev => [...prev, targetId]);
+  };
+
+  const openReportModal = (targetId: string) => {
+      if (interactedUsers.includes(targetId)) return;
+      setReportTargetId(targetId);
+      setReportModalOpen(true);
+      setReportReason('Toxic Behavior');
+  };
+
+  const submitReportReason = () => {
+      if (reportTargetId) {
+          submitReport(reportTargetId, reportReason);
+          setInteractedUsers(prev => [...prev, reportTargetId]);
+          setReportModalOpen(false);
+          setReportTargetId(null);
+      }
+  };
+
+  const reportReasons = [
+      'Toxic Behavior',
+      'AFK / Leaving',
+      'Griefing / Throwing',
+      'Abusive Voice Chat'
+  ];
+
+  // --- READY CHECK PHASE ---
+  if (matchState.phase === MatchPhase.READY_CHECK) {
+      const hasAccepted = matchState.readyPlayers.includes(currentUser.id);
+      const readyCount = matchState.readyPlayers.length;
+      
+      return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
+              <div className="max-w-md w-full p-8 text-center space-y-8 animate-in zoom-in duration-300">
+                  <h1 className="text-5xl font-display font-bold text-white tracking-tighter animate-pulse">MATCH FOUND</h1>
+                  
+                  <div className="flex justify-center space-x-1">
+                      {[...Array(10)].map((_, i) => (
+                          <div 
+                            key={i} 
+                            className={`w-4 h-12 rounded-sm transition-all duration-300 ${i < readyCount ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-zinc-800'}`}
+                          ></div>
+                      ))}
+                  </div>
+                  <p className="text-zinc-400 uppercase tracking-widest">{readyCount} / 10 Players Ready</p>
+
+                  {!hasAccepted ? (
+                      <button 
+                        onClick={acceptMatch}
+                        className="w-full py-6 bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-2xl uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(225,29,72,0.6)] hover:scale-105 transition-all"
+                      >
+                          ACCEPT MATCH
+                      </button>
+                  ) : (
+                      <div className="w-full py-6 bg-zinc-800 text-zinc-500 font-display font-bold text-xl uppercase tracking-widest rounded-2xl border border-white/5 cursor-wait">
+                          Waiting for players...
+                      </div>
+                  )}
+              </div>
+          </div>
+      );
+  }
+
+  // --- MAIN LAYOUT ---
+  return (
+    <div className="flex flex-col h-[calc(100vh-120px)] lg:h-auto">
+        
+        {/* Report Modal */}
+        {reportModalOpen && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <Card className="w-full max-w-md animate-in zoom-in duration-200">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-display font-bold text-white">Report Player</h3>
+                        <button onClick={() => setReportModalOpen(false)} className="text-zinc-500 hover:text-white"><X className="w-5 h-5"/></button>
+                    </div>
+                    
+                    <div className="mb-6">
+                        <label className="block text-xs uppercase text-zinc-500 mb-2">Reason</label>
+                        <select 
+                            value={reportReason}
+                            onChange={(e) => setReportReason(e.target.value)}
+                            className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white outline-none"
+                        >
+                            {reportReasons.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                    </div>
+
+                    <div className="flex space-x-4">
+                        <Button variant="ghost" className="flex-1" onClick={() => setReportModalOpen(false)}>Cancel</Button>
+                        <Button variant="danger" className="flex-1" onClick={submitReportReason}>Submit Report</Button>
+                    </div>
+                </Card>
+            </div>
+        )}
+
+        {/* Mobile Tabs (Only if not finished) */}
+        {!isFinished && (
+            <div className="flex lg:hidden mb-4 rounded-xl overflow-hidden border border-white/10">
+                <button 
+                    onClick={() => setActiveTab('game')} 
+                    className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'game' ? 'bg-rose-600 text-white' : 'bg-zinc-900 text-zinc-500'}`}
+                >
+                    Game
+                </button>
+                <button 
+                    onClick={() => setActiveTab('chat')} 
+                    className={`flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors ${activeTab === 'chat' ? 'bg-rose-600 text-white' : 'bg-zinc-900 text-zinc-500'}`}
+                >
+                    Chat
+                </button>
+            </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto flex-1 overflow-hidden w-full relative">
+      
+            {/* LEFT: Game Content (Full width if finished or if activeTab is game) */}
+            <div className={`flex-1 overflow-y-auto custom-scrollbar pr-2 ${activeTab === 'chat' && !isFinished ? 'hidden lg:block' : 'block'} ${isFinished ? 'w-full lg:w-full max-w-4xl mx-auto' : ''}`}>
+                
+                {matchState.phase === MatchPhase.DRAFT && (
+                    <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto">
+                        <div className="text-center space-y-2">
+                            <h2 className={`text-3xl font-display font-bold uppercase tracking-widest ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>Player Draft</h2>
+                            <p className="text-zinc-500">
+                                Captain <span className={matchState.turn === 'A' ? 'text-rose-500 font-bold' : ''}>{matchState.captainA?.username}</span> 
+                                {' '}vs{' '} 
+                                Captain <span className={matchState.turn === 'B' ? 'text-rose-500 font-bold' : ''}>{matchState.captainB?.username}</span>
+                            </p>
+                            {isMyTurn && <div className="inline-block px-4 py-1 bg-rose-500 text-white text-xs font-bold rounded-full animate-pulse">YOUR PICK</div>}
+                            {!isMyTurn && <div className="inline-block px-4 py-1 bg-zinc-500 text-white text-xs font-bold rounded-full">OPPONENT PICKING...</div>}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Team A */}
+                            <Card className="h-full border-l-4 border-l-emerald-500/50">
+                                <h3 className="text-emerald-400 font-display font-bold uppercase mb-4 tracking-widest">Team {matchState.captainA?.username}</h3>
+                                <div className="space-y-2">
+                                    {matchState.teamA.map(u => (
+                                        <div key={u.id} className={`flex items-center p-3 rounded-xl ${themeMode === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}>
+                                            <span className="w-8 h-8 flex items-center justify-center bg-emerald-900/50 text-white rounded-full text-xs mr-3">
+                                                {u.username[0].toUpperCase()}
+                                            </span>
+                                            <span className={themeMode === 'dark' ? 'text-white' : 'text-black'}>{u.username}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+
+                            {/* Pool */}
+                            <div className="space-y-4">
+                                {matchState.remainingPool.map(player => (
+                                    <button
+                                        key={player.id}
+                                        disabled={!isMyTurn}
+                                        onClick={() => draftPlayer(player)}
+                                        className={`
+                                            w-full p-4 flex justify-between items-center rounded-2xl border transition-all
+                                            ${isMyTurn 
+                                                ? 'bg-white/5 border-white/20 hover:bg-rose-500/10 hover:border-rose-500 cursor-pointer shadow-lg' 
+                                                : `opacity-50 cursor-not-allowed ${themeMode === 'dark' ? 'bg-black/20 border-white/5' : 'bg-black/5 border-black/5'}`}
+                                        `}
+                                    >
+                                        <div className="flex flex-col text-left">
+                                            <span className={`font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>{player.username}</span>
+                                            <span className="text-xs text-zinc-500">{player.primaryRole}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-xs font-mono text-zinc-400">{Math.floor(player.points)} pts</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Team B */}
+                            <Card className="h-full border-r-4 border-r-rose-500/50 text-right">
+                                <h3 className="text-rose-400 font-display font-bold uppercase mb-4 tracking-widest">Team {matchState.captainB?.username}</h3>
+                                <div className="space-y-2">
+                                    {matchState.teamB.map(u => (
+                                        <div key={u.id} className={`flex flex-row-reverse items-center p-3 rounded-xl ${themeMode === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}>
+                                            <span className="w-8 h-8 flex items-center justify-center bg-rose-900/50 text-white rounded-full text-xs ml-3">
+                                                {u.username[0].toUpperCase()}
+                                            </span>
+                                            <span className={themeMode === 'dark' ? 'text-white' : 'text-black'}>{u.username}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        </div>
+                    </div>
+                )}
+
+                {matchState.phase === MatchPhase.VETO && (
+                    <div className="space-y-8 animate-in fade-in duration-500 text-center max-w-4xl mx-auto">
+                        <div>
+                            <h2 className={`text-3xl font-display font-bold uppercase tracking-widest mb-2 ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>Map Veto</h2>
+                            <p className="text-zinc-500">Ban maps until one remains.</p>
+                            {isMyTurn && <div className="mt-4 text-red-500 font-bold animate-pulse">BAN A MAP</div>}
+                            {!isMyTurn && <div className="mt-4 text-zinc-500 font-bold">OPPONENT BANNING...</div>}
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {matchState.remainingMaps.map(map => (
+                                <button
+                                    key={map}
+                                    disabled={!isMyTurn}
+                                    onClick={() => vetoMap(map)}
+                                    className={`
+                                        h-32 rounded-3xl border flex flex-col items-center justify-center space-y-2 transition-all relative overflow-hidden group
+                                        ${isMyTurn 
+                                            ? 'border-zinc-500/20 hover:border-red-500 shadow-lg' 
+                                            : `opacity-50 cursor-not-allowed border-transparent`}
+                                    `}
+                                >   
+                                    <img 
+                                        src={MAP_IMAGES[map]} 
+                                        alt={map}
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                    />
+                                    <div className="absolute inset-0 bg-black/60 group-hover:bg-red-900/40 transition-colors"></div>
+
+                                    <div className="relative z-10 flex flex-col items-center">
+                                        <Ban className={`w-8 h-8 mb-2 ${isMyTurn ? 'text-zinc-300 group-hover:text-white' : 'text-zinc-500'}`} />
+                                        <span className={`font-display tracking-widest uppercase font-bold shadow-black drop-shadow-lg text-white`}>{map}</span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {matchState.phase === MatchPhase.LIVE && (
+                    <div className="space-y-8 md:space-y-12 animate-in fade-in duration-700 max-w-5xl mx-auto">
+                        {/* Map Header Card */}
+                        <div className="relative rounded-3xl overflow-hidden border border-white/5 h-auto py-8 md:h-48 flex flex-col md:flex-row items-center justify-between px-8 bg-black">
+                            {matchState.selectedMap && (
+                                <div 
+                                    className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50 pointer-events-none"
+                                    style={{ backgroundImage: `url(${MAP_IMAGES[matchState.selectedMap]})` }}
+                                ></div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/80 via-black/40 to-rose-900/80 pointer-events-none"></div>
+
+                            <div className="relative z-10 text-center w-full md:w-1/3 mb-4 md:mb-0">
+                                <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-1 shadow-lg">TEAM {matchState.captainA?.username.toUpperCase()}</h2>
+                                <p className="text-emerald-400 text-xs md:text-sm uppercase tracking-widest font-bold shadow-black drop-shadow-md">Attack</p>
+                            </div>
+                            
+                            <div className="relative z-10 text-center w-full md:w-1/3 flex flex-col items-center mb-4 md:mb-0 order-first md:order-none">
+                                <span className="text-xs text-zinc-300 uppercase tracking-widest mb-2 font-semibold shadow-black drop-shadow-md">Map</span>
+                                <span className="text-xl md:text-2xl font-display font-bold text-white mb-4 shadow-black drop-shadow-lg">{matchState.selectedMap}</span>
+                                <div className="flex items-center space-x-2 bg-black/60 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md">
+                                    <Clock className="w-4 h-4 text-zinc-400" />
+                                    <span className="font-mono text-lg md:text-xl text-white">{formatTime(timeLeft)}</span>
+                                </div>
+                            </div>
+
+                            <div className="relative z-10 text-center w-full md:w-1/3">
+                                <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-1 shadow-lg">TEAM {matchState.captainB?.username.toUpperCase()}</h2>
+                                <p className="text-rose-400 text-xs md:text-sm uppercase tracking-widest font-bold shadow-black drop-shadow-md">Defense</p>
+                            </div>
+                        </div>
+
+                        {/* Players List Grid (Centered on Mobile) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
+                            <div className="space-y-4">
+                                <div className="md:hidden text-center text-emerald-500 font-bold uppercase tracking-widest text-xs mb-2">Team {matchState.captainA?.username}</div>
+                                {matchState.teamA.map(player => (
+                                    <div key={player.id} className="flex items-center justify-between p-3 border-b border-emerald-500/10 bg-emerald-500/5 md:bg-transparent rounded-lg md:rounded-none">
+                                        <span className={`font-display text-lg ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>{player.username}</span>
+                                        <span className="text-xs text-zinc-500">{getRankInfo(player.points).name}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="space-y-4 md:text-right">
+                                <div className="md:hidden text-center text-rose-500 font-bold uppercase tracking-widest text-xs mb-2 mt-4">Team {matchState.captainB?.username}</div>
+                                {matchState.teamB.map(player => (
+                                    <div key={player.id} className="flex items-center justify-between md:flex-row-reverse p-3 border-b border-rose-500/10 bg-rose-500/5 md:bg-transparent rounded-lg md:rounded-none">
+                                        <span className={`font-display text-lg ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>{player.username}</span>
+                                        <span className="text-xs text-zinc-500">{getRankInfo(player.points).name}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <Card className="flex flex-col items-center space-y-6 py-12">
+                            <h3 className="uppercase tracking-widest text-zinc-400">Match Control</h3>
+                            
+                            {!canReport ? (
+                                <div className="flex flex-col items-center space-y-2">
+                                    <div className="text-zinc-500 text-sm">Results can be reported in {Math.max(0, 20 - minutesPassed)} minutes.</div>
+                                    {isAdmin && (
+                                        <Button variant="ghost" size="sm" onClick={forceTimePass}>
+                                            [Admin] Skip Time
+                                        </Button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="w-full max-w-md space-y-4 text-center">
+                                    <p className={`text-lg ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>Final Score</p>
+                                    <div className="flex items-center justify-center space-x-4">
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-xs text-zinc-500 mb-1">Team {matchState.captainA?.username}</span>
+                                                <input 
+                                                    type="number"
+                                                    value={scoreA}
+                                                    onChange={(e) => setScoreA(e.target.value)}
+                                                    className={`w-20 h-20 text-center text-4xl font-bold rounded-2xl outline-none border focus:border-rose-500 ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}`}
+                                                />
+                                            </div>
+                                            <span className="text-2xl text-zinc-500 font-bold">:</span>
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-xs text-zinc-500 mb-1">Team {matchState.captainB?.username}</span>
+                                                <input 
+                                                    type="number"
+                                                    value={scoreB}
+                                                    onChange={(e) => setScoreB(e.target.value)}
+                                                    className={`w-20 h-20 text-center text-4xl font-bold rounded-2xl outline-none border focus:border-rose-500 ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}`}
+                                                />
+                                            </div>
+                                    </div>
+
+                                    {reportError && (
+                                        <div className="p-3 bg-red-500/10 text-red-500 text-sm rounded-lg flex items-center justify-center">
+                                            <AlertTriangle className="w-4 h-4 mr-2" />
+                                            {reportError}
+                                        </div>
+                                    )}
+
+                                    <Button 
+                                        variant="primary" 
+                                        className="w-full mt-4"
+                                        onClick={handleReportSubmit}
+                                    >
+                                        Submit Result
+                                    </Button>
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                )}
+
+                {matchState.phase === MatchPhase.FINISHED && (
+                    <div className="flex flex-col items-center space-y-12 animate-in zoom-in duration-500 pt-12 pb-24 w-full">
+                        <div className="text-center">
+                            <Trophy className={`w-24 h-24 mx-auto ${matchState.winner === userTeam ? 'text-emerald-500' : 'text-rose-500'}`} />
+                            <h1 className={`text-8xl font-display font-bold mt-6 mb-4 tracking-tighter ${resultColor}`}>{resultTitle}</h1>
+                            <p className="text-2xl text-zinc-400 font-bold tracking-widest">WINNER: TEAM {matchState.winner === 'A' ? matchState.captainA?.username.toUpperCase() : matchState.captainB?.username.toUpperCase()}</p>
+                            <div className="mt-6 text-6xl font-mono font-bold text-white bg-white/5 px-8 py-4 rounded-3xl border border-white/10">
+                                {matchState.reportA ? `${matchState.reportA.scoreA} - ${matchState.reportA.scoreB}` : ''}
+                            </div>
+                        </div>
+
+                        {/* Commendation Section */}
+                        <Card className="w-full max-w-3xl">
+                            <div className="flex items-center space-x-2 mb-6 text-zinc-400">
+                                <ThumbsUp className="w-5 h-5" />
+                                <h3 className="text-sm font-bold uppercase tracking-widest">Commend & Report</h3>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {matchState.players.filter(p => p.id !== currentUser.id).map(player => (
+                                    <div key={player.id} className={`flex items-center justify-between p-3 rounded-xl border ${themeMode === 'dark' ? 'bg-white/5 border-white/5' : 'bg-black/5 border-black/5'}`}>
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden text-white">
+                                                {player.avatarUrl ? <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" /> : player.username[0].toUpperCase()}
+                                            </div>
+                                            <span className={`font-bold text-sm ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>{player.username}</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                            <button 
+                                                onClick={() => handleCommend(player.id)}
+                                                disabled={interactedUsers.includes(player.id)}
+                                                className={`p-2 rounded-lg transition-colors ${interactedUsers.includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-500/20 text-emerald-500'}`}
+                                                title="Commend"
+                                            >
+                                                <ThumbsUp className="w-4 h-4" />
+                                            </button>
+                                            <button 
+                                                onClick={() => openReportModal(player.id)}
+                                                disabled={interactedUsers.includes(player.id)}
+                                                className={`p-2 rounded-lg transition-colors ${interactedUsers.includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 text-red-500'}`}
+                                                title="Report"
+                                            >
+                                                <Flag className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+
+                        <div className="text-center">
+                            <Button onClick={resetMatch} size="lg">Return to Lobby</Button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* RIGHT: Lobby Chat (Hidden on mobile if Game tab active, HIDDEN IF FINISHED) */}
+            {!isFinished && (
+                <div className={`
+                    w-full lg:w-80 flex-shrink-0 flex flex-col rounded-3xl overflow-hidden border 
+                    ${themeMode === 'dark' ? 'bg-black/20 border-white/5' : 'bg-white border-black/5'} 
+                    h-[calc(100vh-200px)] lg:h-[600px] 
+                    lg:sticky lg:top-24
+                    ${activeTab === 'game' ? 'hidden lg:flex' : 'flex'}
+                `}>
+                    <div className={`p-4 border-b ${themeMode === 'dark' ? 'bg-white/5 border-white/5' : 'bg-black/5 border-black/5'} flex items-center`}>
+                        <MessageSquare className="w-4 h-4 mr-2 text-rose-500" />
+                        <h3 className="text-xs font-bold uppercase tracking-widest">Lobby Chat</h3>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                        {matchState.chat.map(msg => (
+                            <div key={msg.id} className={`flex flex-col ${msg.isSystem ? 'items-center' : (msg.senderId === currentUser.id ? 'items-end' : 'items-start')}`}>
+                                {msg.isSystem ? (
+                                    <div className={`text-[10px] bg-white/5 text-zinc-500 px-2 py-1 rounded-full mb-1 font-bold`}>{msg.text}</div>
+                                ) : (
+                                    <>
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <span className="text-[10px] text-zinc-500 font-bold">{msg.senderName}</span>
+                                            <span className="text-[9px] text-zinc-600">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </div>
+                                        <div className={`px-3 py-2 rounded-xl text-sm max-w-[90%] ${msg.senderId === currentUser.id ? 'bg-rose-500 text-white' : (themeMode === 'dark' ? 'bg-white/10 text-white' : 'bg-zinc-200 text-black')}`}>
+                                            {msg.text}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        ))}
+                        <div ref={chatEndRef} />
+                    </div>
+
+                    <form onSubmit={handleSendMessage} className={`p-3 border-t ${themeMode === 'dark' ? 'border-white/5' : 'border-black/5'}`}>
+                        <div className="relative">
+                            <input 
+                                type="text" 
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                placeholder="Type a message..."
+                                className={`w-full rounded-xl pl-4 pr-10 py-3 text-sm outline-none transition-all ${themeMode === 'dark' ? 'bg-black/40 text-white focus:bg-black/60' : 'bg-zinc-100 text-black focus:bg-white border'}`}
+                            />
+                            <button type="submit" className="absolute right-2 top-2 p-1 text-rose-500 hover:text-rose-400 transition-colors">
+                                <Send className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+        </div>
+    </div>
+  );
+};
+
+export default MatchInterface;
