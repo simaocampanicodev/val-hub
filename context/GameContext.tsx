@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { User, MatchState, MatchPhase, GameRole, GameMap, MatchRecord, ThemeMode, PlayerSnapshot, MatchScore, ChatMessage, Report, Quest, UserQuest, QuestType, FriendRequest } from '../types';
 import { INITIAL_POINTS, MAPS, MATCH_FOUND_SOUND, QUEST_POOL } from '../constants';
 import { generateBot, calculatePoints, calculateLevel, getLevelProgress } from '../services/gameService';
@@ -95,11 +95,21 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   // Admin Logic: Reverted to username check as requested
   const isAdmin = currentUser.username === 'txger.';
 
+  // Ref to hold allUsers without triggering re-renders in effects
+  const allUsersRef = useRef<User[]>([]);
+  
+  // Sync ref with state
+  useEffect(() => {
+    allUsersRef.current = allUsers;
+  }, [allUsers]);
+
   // 1. Real Firebase Listener
+  // FIXED: Removed allUsers/currentUser from dependency array to prevent infinite loops
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
         if (firebaseUser) {
-            const existingUser = allUsers.find(u => u.email === firebaseUser.email);
+            // Use ref to check existing users to avoid dependency cycle
+            const existingUser = allUsersRef.current.find(u => u.email === firebaseUser.email);
 
             if (existingUser) {
                 const { level } = getLevelProgress(existingUser.xp || 0);
@@ -119,15 +129,20 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
                 setIsAuthenticated(false);
             }
         } else {
-            if (!currentUser.id.startsWith('guest-')) {
-                setIsAuthenticated(false);
-                setPendingAuthUser(null);
-                setCurrentUser(initialUser);
-            }
+            // If user logs out or isn't logged in
+            // Only reset if we aren't in a guest session
+            setIsAuthenticated(prev => {
+                if (prev) {
+                    setPendingAuthUser(null);
+                    setCurrentUser(initialUser);
+                    return false;
+                }
+                return prev;
+            });
         }
     });
     return () => unsubscribe();
-  }, [allUsers, currentUser.id]);
+  }, []); // Empty dependency array ensures this only attaches once
 
   useEffect(() => {
     if (isAuthenticated) {

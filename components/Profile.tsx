@@ -385,7 +385,7 @@ const Profile = () => {
         </Card>
         <Card noPadding className={`p-4 flex flex-col items-center justify-center ${themeMode === 'dark' ? 'bg-black/40' : 'bg-white/40'}`}>
                 <span className="text-zinc-500 text-[10px] uppercase tracking-widest mb-1">Winrate</span>
-            <span className={`text-2xl font-display font-bold ${Number(winrate) > 50 ? 'text-emerald-400' : 'text-zinc-200'}`}>{winrate}%</span>
+            <span className={`text-2xl font-display font-bold ${Number(winrate) > 50 ? 'text-emerald-400' : (themeMode === 'dark' ? 'text-zinc-200' : 'text-zinc-900')}`}>{winrate}%</span>
         </Card>
         <Card noPadding className={`p-4 flex flex-col items-center justify-center ${themeMode === 'dark' ? 'bg-black/40' : 'bg-white/40'}`}>
                 <span className="text-zinc-500 text-[10px] uppercase tracking-widest mb-1">Games Played</span>
