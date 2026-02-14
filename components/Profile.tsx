@@ -517,7 +517,14 @@ const Profile = () => {
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Agent Pool</h3>
                     {isOwnProfile && !isEditingAgents && (
-                        <Button size="sm" variant="ghost" onClick={() => setIsEditingAgents(true)}>
+                        <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => {
+                                setEditTopAgents(profileUser.topAgents);
+                                setIsEditingAgents(true);
+                            }}
+                        >
                             <Edit2 className="w-3 h-3" />
                         </Button>
                     )}

@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User, MatchState, MatchPhase, GameRole, GameMap, MatchRecord, ThemeMode, PlayerSnapshot, MatchScore, ChatMessage, Report, Quest, UserQuest, QuestType, FriendRequest } from '../types';
 import { INITIAL_POINTS, MAPS, MATCH_FOUND_SOUND, QUEST_POOL } from '../constants';
 import { generateBot, calculatePoints, calculateLevel, getLevelProgress } from '../services/gameService';
@@ -105,6 +105,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
                 const { level } = getLevelProgress(existingUser.xp || 0);
                 setCurrentUser({
                     ...existingUser,
+                    // Ensure activeQuests is initialized if missing
                     activeQuests: existingUser.activeQuests || [],
                     friends: existingUser.friends || [],
                     friendRequests: existingUser.friendRequests || [],
@@ -139,13 +140,13 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   // Generate Quests on Load/Date Change
   useEffect(() => {
-      if (isAuthenticated) {
+      if (isAuthenticated && !currentUser.isBot && !currentUser.id.startsWith('guest-') && currentUser.username !== 'Guest') {
           generateQuestsIfNeeded();
           if (currentUser.username && currentUser.topAgents.length === 3 && currentUser.riotId) {
               processQuestProgress('COMPLETE_PROFILE', 1, 1);
           }
       }
-  }, [isAuthenticated, currentUser.id, currentUser.riotId]);
+  }, [isAuthenticated, currentUser.id, currentUser.riotId]); // Added dependencies to trigger when user loads
 
   // --- AUTOMATION: Watch Ready Players & Auto Start Draft ---
   useEffect(() => {
@@ -213,6 +214,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   const processQuestProgress = (type: QuestType, amount: number = 1, forceValue: number | null = null) => {
       setCurrentUser(prev => {
+          if (!prev.activeQuests) return prev;
           const updatedQuests = prev.activeQuests.map(uq => {
               const questDef = QUEST_POOL.find(q => q.id === uq.questId);
               if (!questDef || questDef.type !== type || uq.completed) return uq;
@@ -288,13 +290,19 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       setCurrentUser(prev => ({ ...prev, friends: prev.friends.filter(f => f !== friendId) }));
   };
 
-  // ... (Other functions linkRiotAccount, joinQueue, etc. kept same as previous, just compacted for context)
   const completeRegistration = (data: RegisterData) => {
     if (allUsers.find(u => u.username.toLowerCase() === data.username.toLowerCase())) {
         alert("Username taken."); return;
     }
     
     const newId = pendingAuthUser?.uid || `guest-${Date.now()}`;
+
+    // Initialize quests for new user immediately
+    const initialQuests: UserQuest[] = [
+        ...QUEST_POOL.filter(q => q.category === 'DAILY').map(q => ({ questId: q.id, progress: 0, completed: false, claimed: false })),
+        ...QUEST_POOL.filter(q => q.category === 'MONTHLY').map(q => ({ questId: q.id, progress: 0, completed: false, claimed: false })),
+        ...QUEST_POOL.filter(q => q.category === 'UNIQUE').map(q => ({ questId: q.id, progress: 0, completed: false, claimed: false }))
+    ];
 
     const newUser: User = {
         ...initialUser,
@@ -304,7 +312,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         primaryRole: data.primaryRole,
         secondaryRole: data.secondaryRole,
         topAgents: data.topAgents,
-        avatarUrl: pendingAuthUser?.photoURL || undefined
+        avatarUrl: pendingAuthUser?.photoURL || undefined,
+        activeQuests: initialQuests,
+        lastDailyQuestGeneration: Date.now(),
+        lastMonthlyQuestGeneration: Date.now()
     };
     
     setAllUsers(prev => [...prev, newUser]);
@@ -400,7 +411,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   };
 
   // --- BOT ACTIONS (DRAFT & VETO) ---
-  const handleBotAction = () => {
+  const handleBotAction = useCallback(() => {
     if (!matchState) return;
 
     const isTeamA = matchState.turn === 'A';
@@ -424,7 +435,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
             vetoMap(randomMap);
         }
     }
-  };
+  }, [matchState]); // We must keep matchState here so it reads current state
 
   const draftPlayer = (player: User) => {
     if (!matchState) return;

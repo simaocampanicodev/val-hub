@@ -37,13 +37,14 @@ const MatchInterface = () => {
   // Bot Automation Hook
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
+    // Use specific dependencies instead of the whole matchState object to prevent infinite resets
     if (matchState && (matchState.phase === MatchPhase.DRAFT || matchState.phase === MatchPhase.VETO)) {
         timer = setTimeout(() => {
             handleBotAction();
         }, 1500); 
     }
     return () => clearTimeout(timer);
-  }, [matchState, handleBotAction]);
+  }, [matchState?.phase, matchState?.turn, matchState?.remainingPool.length, matchState?.remainingMaps.length]); // Fixed dependencies
 
   useEffect(() => {
     if (matchState?.phase === MatchPhase.LIVE && matchState.startTime) {
@@ -53,7 +54,7 @@ const MatchInterface = () => {
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [matchState]);
+  }, [matchState?.phase, matchState?.startTime]);
 
   if (!matchState) return null;
 
