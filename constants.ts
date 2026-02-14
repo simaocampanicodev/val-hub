@@ -39,9 +39,9 @@ export const MAP_IMAGES: Record<GameMap, string> = {
 
 // Agent Icons
 export const AGENT_IMAGES: Record<string, string> = {
-    'Jett': 'https://media.valorant-api.com/agents/add6443a-41bd-e414-f6ad-e3b8db388e27/displayicon.png',
+    'Jett': 'https://media.valorant-api.com/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/displayicon.png',
     'Raze': 'https://media.valorant-api.com/agents/f94c3b30-42be-e959-889c-5aa313dba261/displayicon.png',
-    'Reyna': 'https://media.valorant-api.com/agents/a3bf58c7-4430-eee7-380a-fd8bdf520b77/displayicon.png',
+    'Reyna': 'https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4f1-ad90e9e46bcc/displayicon.png',
     'Phoenix': 'https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f7921d69/displayicon.png',
     'Yoru': 'https://media.valorant-api.com/agents/7f94d92c-4234-0a36-9646-3a87eb8b5c89/displayicon.png',
     'Neon': 'https://media.valorant-api.com/agents/bb2a4828-46eb-8cd1-e765-15848195d751/displayicon.png',
@@ -51,21 +51,21 @@ export const AGENT_IMAGES: Record<string, string> = {
     'Breach': 'https://media.valorant-api.com/agents/5f8d3a7f-467b-97f3-062c-13acf203c006/displayicon.png',
     'Skye': 'https://media.valorant-api.com/agents/6f2a04ca-43e0-be17-7f36-b3908627744d/displayicon.png',
     'KAY/O': 'https://media.valorant-api.com/agents/601dbbe7-43ce-be57-2a40-4abd24953621/displayicon.png',
-    'Fade': 'https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1fc52e/displayicon.png',
+    'Fade': 'https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1facd6/displayicon.png',
     'Tejo': 'https://titles.trackercdn.com/valorant-api/agents/b444168c-4e35-8076-db47-ef9bf368f384/displayicon.png',
     'Gekko': 'https://media.valorant-api.com/agents/e370fa57-4757-3604-3648-499e1f642d3f/displayicon.png',
     'Omen': 'https://media.valorant-api.com/agents/8e253930-4c05-31dd-1b6c-968525494517/displayicon.png',
     'Brimstone': 'https://media.valorant-api.com/agents/9f0d8ba9-4140-b941-57d3-a7ad57c6b417/displayicon.png',
     'Viper': 'https://media.valorant-api.com/agents/707eab51-4836-f488-046a-cda6bf494859/displayicon.png',
     'Astra': 'https://media.valorant-api.com/agents/41fb69c1-4189-7b37-f117-bcaf1e96f1bf/displayicon.png',
-    'Harbor': 'https://media.valorant-api.com/agents/95c7836b-434f-7537-ba92-27804c442fad/displayicon.png',
+    'Harbor': 'https://media.valorant-api.com/agents/95b78ed7-4637-86d9-7e41-71ba8c293152/displayicon.png',
     'Clove': 'https://media.valorant-api.com/agents/1dbf2edd-4729-0984-3115-daa5eed44993/displayicon.png',
     'Sage': 'https://media.valorant-api.com/agents/569fdd95-4d10-43ab-ca70-79becc718b46/displayicon.png',
     'Cypher': 'https://media.valorant-api.com/agents/117ed9e3-49f3-6512-3ccf-0cada7e3823b/displayicon.png', 
     'Killjoy': 'https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a0aee9f98746/displayicon.png',
     'Chamber': 'https://media.valorant-api.com/agents/22697a3d-45bf-8dd7-4fec-84a9e28c69d7/displayicon.png',
     'Deadlock': 'https://media.valorant-api.com/agents/cc8b64c8-4b25-4ff9-6e7f-37b4da43d235/displayicon.png',
-    'Vyse': 'https://media.valorant-api.com/agents/2643a60a-48d6-6a56-8208-89873d937038/displayicon.png',
+    'Vyse': 'https://media.valorant-api.com/agents/efba5359-4016-a1e5-7626-b1ae76895940/displayicon.png',
     'Veto': 'https://static.wikia.nocookie.net/valorant/images/4/4e/Veto_icon.png' 
 };
 
