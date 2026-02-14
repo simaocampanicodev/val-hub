@@ -1,25 +1,32 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
+import { signInWithGoogle } from '../services/firebase';
 import Card from './ui/Card';
 import Button from './ui/Button';
 import { AGENTS, ROLES } from '../constants';
 import { GameRole } from '../types';
 
 const Auth = () => {
-  const { login, register, themeMode } = useGame();
-  const [isLogin, setIsLogin] = useState(true);
+  const { completeRegistration, themeMode, pendingAuthUser, completeRegistration: manualComplete } = useGame();
   
-  // Login State
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-
-  // Register State
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
+  // Auth Flow State
+  const [step, setStep] = useState<'start' | 'registration_details'>('start');
+  
+  // Registration Data
   const [regUsername, setRegUsername] = useState('');
   const [regPrimary, setRegPrimary] = useState<GameRole>(GameRole.DUELIST);
   const [regSecondary, setRegSecondary] = useState<GameRole>(GameRole.FLEX);
   const [regAgents, setRegAgents] = useState<string[]>([]);
+
+  useEffect(() => {
+      if (pendingAuthUser) {
+          setStep('registration_details');
+          if (pendingAuthUser.email) {
+              setRegUsername(pendingAuthUser.email.split('@')[0]);
+          }
+      }
+  }, [pendingAuthUser]);
 
   const handleAgentToggle = (agent: string) => {
     if (regAgents.includes(agent)) {
@@ -31,16 +38,43 @@ const Auth = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (isLogin) {
-      if (!loginEmail.trim() || !loginPassword.trim()) return;
-      login(loginEmail, loginPassword);
-    } else {
-      // Validation
-      if (!regEmail.trim() || !regUsername.trim() || !regPassword.trim()) {
-          alert("Please fill in all fields");
+  const handleGoogleClick = async () => {
+      try {
+          await signInWithGoogle();
+          // Não é preciso fazer mais nada aqui. 
+          // O GameContext tem um listener (onAuthStateChanged) que vai detetar o login
+          // e atualizar o estado automaticamente.
+      } catch (error) {
+          console.error("Login falhou:", error);
+      }
+  };
+
+  const handleManualBypass = () => {
+      // Mock user for Preview environments where Firebase Auth Domain fails
+      const randomSuffix = Math.floor(Math.random() * 10000);
+      const mockUser = {
+          email: `guest-${randomSuffix}@valhub.pt`,
+          uid: `guest-${Date.now()}`,
+          photoURL: null
+      };
+      
+      // We force the context to see this "pending" user
+      // Note: This relies on GameContext being able to accept this, but since we are triggering the registration flow directly,
+      // we need to set the internal state.
+      
+      setStep('registration_details');
+      // We store the mock user temporarily in a way accessible to submit
+      (window as any).__MOCK_USER__ = mockUser;
+      
+      // FIX: Set a unique username to avoid "Username taken" errors on re-login
+      setRegUsername(`GuestPlayer${randomSuffix}`);
+  };
+
+  const handleRegistrationSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      if (!regUsername.trim()) {
+          alert("Please enter a username.");
           return;
       }
       if (regPrimary === regSecondary) {
@@ -52,15 +86,21 @@ const Auth = () => {
           return;
       }
 
-      register({
-          email: regEmail,
-          password: regPassword,
+      const userToRegister = pendingAuthUser || (window as any).__MOCK_USER__;
+
+      if (!userToRegister || !userToRegister.email) {
+          alert("Authentication error. Please try logging in again.");
+          setStep('start');
+          return;
+      }
+
+      completeRegistration({
+          email: userToRegister.email,
           username: regUsername,
           primaryRole: regPrimary,
           secondaryRole: regSecondary,
           topAgents: regAgents
       });
-    }
   };
 
   return (
@@ -73,149 +113,104 @@ const Auth = () => {
       </div>
 
       <Card className="w-full max-w-lg">
-        <div className="flex justify-center space-x-4 mb-8">
-            <button 
-                onClick={() => setIsLogin(true)}
-                className={`text-sm uppercase tracking-widest pb-2 border-b-2 transition-colors ${isLogin ? 'border-rose-500 text-rose-500' : 'border-transparent text-zinc-500'}`}
-            >
-                Login
-            </button>
-            <button 
-                onClick={() => setIsLogin(false)}
-                className={`text-sm uppercase tracking-widest pb-2 border-b-2 transition-colors ${!isLogin ? 'border-rose-500 text-rose-500' : 'border-transparent text-zinc-500'}`}
-            >
-                Register
-            </button>
-        </div>
+        
+        {step === 'start' && (
+             <div className="flex flex-col items-center space-y-6 py-8">
+                 <p className="text-zinc-400 text-center mb-4">Connect your account to start playing.</p>
+                 <button 
+                    onClick={handleGoogleClick}
+                    className="flex items-center justify-center space-x-3 w-full max-w-sm bg-white text-black py-4 rounded-xl font-bold shadow-lg hover:bg-gray-100 transition-colors"
+                 >
+                     <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
+                     <span>Continue with Google</span>
+                 </button>
+                 
+                 <div className="w-full max-w-sm flex items-center justify-center border-t border-zinc-800 pt-4 mt-2">
+                     <button 
+                        onClick={handleManualBypass}
+                        className="text-xs text-zinc-500 hover:text-white underline"
+                     >
+                        Entrar como Convidado (Modo Teste / Preview)
+                     </button>
+                 </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {isLogin ? (
-                <>
-                    <div>
-                        <label className="block text-xs text-zinc-500 uppercase mb-2">Email</label>
-                        <input 
-                            type="email" 
-                            value={loginEmail}
-                            onChange={(e) => setLoginEmail(e.target.value)}
-                            className={`w-full rounded-2xl p-4 font-display outline-none border transition-all
-                                ${themeMode === 'dark' 
-                                    ? 'bg-black/20 border-white/10 text-white focus:border-rose-500' 
-                                    : 'bg-zinc-100 border-zinc-200 text-black focus:border-rose-500'
-                                }
-                            `}
-                            placeholder="Enter your email"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-xs text-zinc-500 uppercase mb-2">Password</label>
-                        <input 
-                            type="password" 
-                            value={loginPassword}
-                            onChange={(e) => setLoginPassword(e.target.value)}
-                            className={`w-full rounded-2xl p-4 font-display outline-none border transition-all
-                                ${themeMode === 'dark' 
-                                    ? 'bg-black/20 border-white/10 text-white focus:border-rose-500' 
-                                    : 'bg-zinc-100 border-zinc-200 text-black focus:border-rose-500'
-                                }
-                            `}
-                            placeholder="Enter your password"
-                        />
-                    </div>
-                </>
-            ) : (
-                <div className="space-y-4">
-                     <div>
-                        <label className="block text-xs text-zinc-500 uppercase mb-2">Username</label>
-                        <input 
-                            type="text" 
-                            value={regUsername}
-                            onChange={(e) => setRegUsername(e.target.value)}
-                            className={`w-full rounded-2xl p-3 font-display outline-none border transition-all
-                                ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}
-                            `}
-                            required
-                        />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs text-zinc-500 uppercase mb-2">Email</label>
-                            <input 
-                                type="email" 
-                                value={regEmail}
-                                onChange={(e) => setRegEmail(e.target.value)}
-                                className={`w-full rounded-2xl p-3 font-display outline-none border transition-all
-                                    ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}
-                                `}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs text-zinc-500 uppercase mb-2">Password</label>
-                            <input 
-                                type="password" 
-                                value={regPassword}
-                                onChange={(e) => setRegPassword(e.target.value)}
-                                className={`w-full rounded-2xl p-3 font-display outline-none border transition-all
-                                    ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}
-                                `}
-                                required
-                            />
-                        </div>
-                    </div>
+                 <div className="text-xs text-zinc-600 mt-2 text-center">
+                     By connecting, you agree to our Terms of Service.<br/>
+                     <span className="opacity-50 text-rose-500 font-bold">REQUER CHAVES DO FIREBASE NO CÓDIGO</span>
+                 </div>
+             </div>
+        )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs text-zinc-500 uppercase mb-2">Primary Role</label>
-                            <select 
-                                value={regPrimary}
-                                onChange={(e) => setRegPrimary(e.target.value as GameRole)}
-                                className={`w-full rounded-2xl p-3 outline-none border appearance-none ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}`}
-                            >
-                                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs text-zinc-500 uppercase mb-2">Secondary Role</label>
-                            <select 
-                                value={regSecondary}
-                                onChange={(e) => setRegSecondary(e.target.value as GameRole)}
-                                className={`w-full rounded-2xl p-3 outline-none border appearance-none ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}`}
-                            >
-                                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                            </select>
-                            {regPrimary === regSecondary && <p className="text-red-500 text-[10px] mt-1">Roles must be different.</p>}
-                        </div>
-                    </div>
+        {step === 'registration_details' && (
+            <form onSubmit={handleRegistrationSubmit} className="space-y-6">
+                <div className="text-center mb-6">
+                    <h3 className="text-xl font-bold">Complete Profile</h3>
+                    <p className="text-sm text-zinc-500">Set up your Valorant identity</p>
+                </div>
 
+                <div>
+                    <label className="block text-xs text-zinc-500 uppercase mb-2">Username</label>
+                    <input 
+                        type="text" 
+                        value={regUsername}
+                        onChange={(e) => setRegUsername(e.target.value)}
+                        className={`w-full rounded-2xl p-3 font-display outline-none border transition-all
+                            ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}
+                        `}
+                        required
+                    />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-xs text-zinc-500 uppercase mb-2">Select Top 3 Agents ({regAgents.length}/3)</label>
-                        <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto custom-scrollbar p-1">
-                            {AGENTS.map(agent => (
-                                <button
-                                    key={agent}
-                                    type="button"
-                                    onClick={() => handleAgentToggle(agent)}
-                                    className={`
-                                        px-2 py-1.5 rounded-lg text-xs border transition-all
-                                        ${regAgents.includes(agent) 
-                                            ? `bg-rose-500 text-white border-rose-500` 
-                                            : `border-transparent text-zinc-500 ${themeMode === 'dark' ? 'bg-white/5 hover:bg-white/10' : 'bg-black/5 hover:bg-black/10'}`}
-                                    `}
-                                >
-                                    {agent}
-                                </button>
-                            ))}
-                        </div>
+                        <label className="block text-xs text-zinc-500 uppercase mb-2">Primary Role</label>
+                        <select 
+                            value={regPrimary}
+                            onChange={(e) => setRegPrimary(e.target.value as GameRole)}
+                            className={`w-full rounded-2xl p-3 outline-none border appearance-none cursor-pointer bg-zinc-900 border-white/10 text-white`}
+                        >
+                            {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs text-zinc-500 uppercase mb-2">Secondary Role</label>
+                        <select 
+                            value={regSecondary}
+                            onChange={(e) => setRegSecondary(e.target.value as GameRole)}
+                            className={`w-full rounded-2xl p-3 outline-none border appearance-none cursor-pointer bg-zinc-900 border-white/10 text-white`}
+                        >
+                            {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
                     </div>
                 </div>
-            )}
 
-            <Button type="submit" className="w-full py-4 mt-4">
-                {isLogin ? 'Enter Hub' : 'Create Account'}
-            </Button>
-        </form>
+                <div>
+                    <label className="block text-xs text-zinc-500 uppercase mb-2">Select Top 3 Agents ({regAgents.length}/3)</label>
+                    <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto custom-scrollbar p-1">
+                        {AGENTS.map(agent => (
+                            <button
+                                key={agent}
+                                type="button"
+                                onClick={() => handleAgentToggle(agent)}
+                                className={`
+                                    px-2 py-1.5 rounded-lg text-xs border transition-all
+                                    ${regAgents.includes(agent) 
+                                        ? `bg-rose-500 text-white border-rose-500` 
+                                        : `border-transparent text-zinc-500 ${themeMode === 'dark' ? 'bg-white/5 hover:bg-white/10' : 'bg-black/5 hover:bg-black/10'}`}
+                                `}
+                            >
+                                {agent}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <Button type="submit" className="w-full py-4 mt-4">
+                    Finish Setup
+                </Button>
+            </form>
+        )}
+
       </Card>
     </div>
   );

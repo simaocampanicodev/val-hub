@@ -1,4 +1,5 @@
 
+
 export enum GameRole {
   DUELIST = 'Duelist',
   INITIATOR = 'Initiator',
@@ -49,10 +50,12 @@ export interface FriendRequest {
 export interface User {
   id: string;
   email?: string;
-  password?: string;
   username: string;
   avatarUrl?: string;
+  riotId?: string; // Player Name
+  riotTag?: string; // #EUW
   points: number; // MMR
+  lastPointsChange?: number; // To track how much was gained/lost in last game
   xp: number; // Experience for Leveling
   level: number;
   reputation: number;

@@ -471,6 +471,14 @@ const MatchInterface = () => {
                         <div className="text-center">
                             <Trophy className={`w-24 h-24 mx-auto ${matchState.winner === userTeam ? 'text-emerald-500' : 'text-rose-500'}`} />
                             <h1 className={`text-8xl font-display font-bold mt-6 mb-4 tracking-tighter ${resultColor}`}>{resultTitle}</h1>
+                            
+                            {/* Points Gained/Lost Display */}
+                            {currentUser.lastPointsChange !== undefined && (
+                                <div className={`text-2xl font-bold font-mono mb-4 ${currentUser.lastPointsChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                    {currentUser.lastPointsChange >= 0 ? '+' : ''}{currentUser.lastPointsChange} MMR
+                                </div>
+                            )}
+
                             <p className="text-2xl text-zinc-400 font-bold tracking-widest">WINNER: TEAM {matchState.winner === 'A' ? matchState.captainA?.username.toUpperCase() : matchState.captainB?.username.toUpperCase()}</p>
                             <div className="mt-6 text-6xl font-mono font-bold text-white bg-white/5 px-8 py-4 rounded-3xl border border-white/10">
                                 {matchState.reportA ? `${matchState.reportA.scoreA} - ${matchState.reportA.scoreB}` : ''}

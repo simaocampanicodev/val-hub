@@ -5,7 +5,7 @@ import { AGENTS, ROLES, AGENT_IMAGES, AGENT_BANNERS, MAP_IMAGES, MAPS } from '..
 import { getRankInfo, getLevelProgress } from '../services/gameService';
 import Card from './ui/Card';
 import Button from './ui/Button';
-import { Camera, Edit2, Save, X, User as UserIcon, Award, Flame, Star, Shield, Crown, ThumbsUp, TrendingUp, Map as MapIcon, Activity, Users } from 'lucide-react';
+import { Camera, Edit2, Save, X, User as UserIcon, Award, Flame, Star, Shield, Crown, ThumbsUp, TrendingUp, Map as MapIcon, Activity, Users, Link as LinkIcon, Loader2, CheckCircle } from 'lucide-react';
 
 interface BadgeType {
   id: string;
@@ -18,7 +18,7 @@ interface BadgeType {
 }
 
 const Profile = () => {
-  const { currentUser, updateProfile, themeMode, allUsers, viewProfileId, isAdmin, resetSeason, matchHistory } = useGame();
+  const { currentUser, updateProfile, themeMode, allUsers, viewProfileId, isAdmin, resetSeason, matchHistory, linkRiotAccount } = useGame();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Determine which user to show
@@ -29,6 +29,12 @@ const Profile = () => {
   const isOwnProfile = profileUser.id === currentUser.id;
   const [isEditing, setIsEditing] = useState(false);
   const [activeBadge, setActiveBadge] = useState<BadgeType | null>(null);
+
+  // Riot ID Linking State
+  const [riotIdInput, setRiotIdInput] = useState(profileUser.riotId || '');
+  const [riotTagInput, setRiotTagInput] = useState(profileUser.riotTag || '');
+  const [isLinkingRiot, setIsLinkingRiot] = useState(false);
+  const [isVerifyingRiot, setIsVerifyingRiot] = useState(false);
 
   const [editTopAgents, setEditTopAgents] = useState<string[]>(profileUser.topAgents);
 
@@ -53,7 +59,6 @@ const Profile = () => {
 
   const recentForm = useMemo(() => {
       // Get last 4 matches
-      // Match History is assumed to be Newest First ([0] is most recent)
       return userMatches.slice(0, 4).map(m => {
           const myTeam = m.teamAIds.includes(profileUser.id) ? 'A' : 'B';
           return m.winner === myTeam ? 'W' : 'L';
@@ -71,15 +76,14 @@ const Profile = () => {
           if (m.winner === myTeam) stats[m.map].wins += 1;
       });
 
-      // Convert to array and sort by winrate then games played
       return Object.entries(stats)
           .map(([map, data]) => ({
               map,
               ...data,
               winrate: data.played > 0 ? (data.wins / data.played) * 100 : 0
           }))
-          .sort((a, b) => b.played - a.played) // Sort by most played first
-          .slice(0, 3); // Top 3 maps
+          .sort((a, b) => b.played - a.played) 
+          .slice(0, 3); 
   }, [userMatches, profileUser.id]);
 
   // --- BADGE LOGIC ---
@@ -167,6 +171,36 @@ const Profile = () => {
       setIsEditing(false);
   };
 
+  // --- RIOT INPUT HANDLERS ---
+  const handleRiotNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      // Max 16 characters for Riot Game Name
+      const val = e.target.value.slice(0, 16);
+      setRiotIdInput(val);
+  };
+
+  const handleRiotTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      // Remove '#' and limit to 5 characters
+      let val = e.target.value.replace(/#/g, '').slice(0, 5);
+      setRiotTagInput(val);
+  };
+  
+  const handleLinkRiot = async () => {
+      if (!riotIdInput.trim() || !riotTagInput.trim()) {
+          alert("Please enter both ID and Tag");
+          return;
+      }
+      
+      // Simulating API Verification
+      setIsVerifyingRiot(true);
+      
+      // Fake delay to simulate checking with Riot servers
+      setTimeout(() => {
+          setIsVerifyingRiot(false);
+          linkRiotAccount(riotIdInput.trim(), riotTagInput.trim());
+          setIsLinkingRiot(false);
+      }, 1500);
+  };
+
   const handleResetSeason = () => {
       if (confirm("ARE YOU SURE? This will reset everyone's points to 1000.")) {
           resetSeason();
@@ -211,16 +245,16 @@ const Profile = () => {
       )}
 
       {/* Hero Banner */}
-      <div className="relative rounded-3xl overflow-hidden min-h-[250px] shadow-2xl border border-white/5">
+      <div className="relative rounded-3xl overflow-hidden min-h-[300px] md:min-h-[250px] shadow-2xl border border-white/5">
         <div 
             className="absolute inset-0 bg-cover bg-[center_top_20%] opacity-40 transform scale-105 transition-transform duration-1000 hover:scale-100"
             style={{ backgroundImage: `url(${bannerUrl})` }}
         ></div>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/40 to-black/90"></div>
 
-        <div className="absolute bottom-0 left-0 w-full p-8 flex items-end space-x-6 z-10">
+        <div className="absolute bottom-0 left-0 w-full p-6 md:p-8 flex flex-col md:flex-row items-start md:items-end space-y-4 md:space-y-0 md:space-x-6 z-10">
             <div className="relative group">
-                <div className="w-28 h-28 rounded-3xl bg-zinc-800 border-4 border-black/50 overflow-hidden shadow-2xl flex items-center justify-center">
+                <div className="w-24 h-24 md:w-28 md:h-28 rounded-3xl bg-zinc-800 border-4 border-black/50 overflow-hidden shadow-2xl flex items-center justify-center">
                     {profileUser.avatarUrl ? (
                         <img src={profileUser.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
                     ) : (
@@ -237,18 +271,24 @@ const Profile = () => {
                 )}
             </div>
 
-            <div className="mb-2">
-                <div className="flex items-center space-x-3 mb-1">
-                    <h1 className="text-4xl font-display font-bold text-white shadow-black drop-shadow-lg">{profileUser.username}</h1>
+            <div className="mb-2 w-full flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <h1 className="text-3xl md:text-4xl font-display font-bold text-white shadow-black drop-shadow-lg truncate max-w-full">{profileUser.username}</h1>
                     <span 
-                        className="px-3 py-1 rounded-full text-xs font-bold text-white uppercase border border-white/20 shadow-lg"
+                        className="px-3 py-1 rounded-full text-xs font-bold text-white uppercase border border-white/20 shadow-lg flex-shrink-0"
                         style={{ backgroundColor: rank.color, textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}
                     >
                         {rank.name}
                     </span>
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-800 text-zinc-300 uppercase border border-white/10 shadow-lg">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-800 text-zinc-300 uppercase border border-white/10 shadow-lg flex-shrink-0">
                         Lvl {displayLevel}
                     </span>
+                    {profileUser.riotId && (
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-600/20 border border-rose-500/30 text-rose-400 uppercase flex-shrink-0 flex items-center">
+                            {profileUser.riotId}#{profileUser.riotTag}
+                            <CheckCircle className="w-3 h-3 ml-1" />
+                        </span>
+                    )}
                 </div>
                 <div className="flex space-x-4 text-sm text-zinc-300 font-medium">
                     <span>{profileUser.primaryRole}</span>
@@ -256,8 +296,8 @@ const Profile = () => {
                     <span>{profileUser.secondaryRole}</span>
                 </div>
                 
-                {/* XP Bar */}
-                <div className="mt-4 w-full max-w-xs">
+                {/* XP Bar (Mobile Fixed) */}
+                <div className="mt-4 w-full md:max-w-xs flex flex-col">
                     <div className="flex justify-between text-[10px] text-zinc-400 mb-1 uppercase tracking-wider font-bold">
                          <span>XP Progress</span>
                          <span>{currentLevelXP} / {xpForNextLevel}</span>
@@ -281,7 +321,7 @@ const Profile = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Left Column (Stats + Identity) */}
+        {/* Left Column (Stats + Identity + Maps) - Takes 2/3 width on Desktop */}
         <div className="space-y-6 md:col-span-2">
             
             {/* Quick Stats Row */}
@@ -299,6 +339,77 @@ const Profile = () => {
                     <span className="text-2xl font-display font-bold text-white">{totalGames}</span>
                 </Card>
             </div>
+            
+            {/* Riot ID Linking (Own Profile Only) */}
+            {isOwnProfile && (
+                <Card>
+                     <div className="flex justify-between items-center mb-4">
+                         <div className="flex items-center space-x-2 text-zinc-400">
+                             <LinkIcon className="w-5 h-5" />
+                             <h3 className="text-sm font-bold uppercase tracking-widest">Riot Account</h3>
+                         </div>
+                         {!profileUser.riotId && !isLinkingRiot && (
+                             <Button size="sm" onClick={() => setIsLinkingRiot(true)}>Link Account</Button>
+                         )}
+                     </div>
+
+                     {profileUser.riotId && !isLinkingRiot ? (
+                         <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+                             <span className="text-white font-bold text-lg">{profileUser.riotId}<span className="text-zinc-500">#{profileUser.riotTag}</span></span>
+                             <span className="text-xs text-emerald-500 font-bold uppercase flex items-center bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                                <CheckCircle className="w-3 h-3 mr-1"/> Verified
+                             </span>
+                         </div>
+                     ) : (
+                         isLinkingRiot ? (
+                             <div className="flex flex-col space-y-4">
+                                 <p className="text-sm text-zinc-500">
+                                     Enter your Riot ID exactly as it appears in-game.
+                                 </p>
+                                 <div className="flex items-center gap-2">
+                                     <div className="flex-1 relative">
+                                        <input 
+                                            placeholder="Game Name" 
+                                            className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-rose-500 transition-colors"
+                                            value={riotIdInput}
+                                            onChange={handleRiotNameChange}
+                                        />
+                                        <span className="absolute right-2 top-3 text-[10px] text-zinc-600">{riotIdInput.length}/16</span>
+                                     </div>
+                                     <span className="text-zinc-500 font-bold text-xl">#</span>
+                                     <div className="w-28 relative">
+                                        <input 
+                                            placeholder="TAG" 
+                                            className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-rose-500 transition-colors uppercase"
+                                            value={riotTagInput}
+                                            onChange={handleRiotTagChange}
+                                        />
+                                        <span className="absolute right-2 top-3 text-[10px] text-zinc-600">{riotTagInput.length}/5</span>
+                                     </div>
+                                 </div>
+                                 <div className="text-[10px] text-zinc-500 italic">
+                                     * Note: Real verification requires the Riot API (backend). This is a simulation for the UI.
+                                 </div>
+                                 <div className="flex gap-2">
+                                     <Button variant="ghost" className="flex-1" onClick={() => setIsLinkingRiot(false)} disabled={isVerifyingRiot}>Cancel</Button>
+                                     <Button className="flex-1 flex justify-center items-center" onClick={handleLinkRiot} disabled={isVerifyingRiot}>
+                                         {isVerifyingRiot ? (
+                                             <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                Verifying...
+                                             </>
+                                         ) : (
+                                             "Verify & Save"
+                                         )}
+                                     </Button>
+                                 </div>
+                             </div>
+                         ) : (
+                             <p className="text-sm text-zinc-500 italic">No Riot Account linked. You must link an account to play.</p>
+                         )
+                     )}
+                </Card>
+            )}
             
             {/* Identity */}
             <Card>
@@ -323,7 +434,7 @@ const Profile = () => {
                             value={profileUser.primaryRole}
                             disabled={!isOwnProfile}
                             onChange={(e) => updateProfile({ primaryRole: e.target.value as any })}
-                            className={`w-full rounded-xl p-3 bg-black/20 border border-white/10 text-white outline-none appearance-none ${!isOwnProfile ? 'cursor-default opacity-70' : 'focus:border-rose-500'}`}
+                            className={`w-full rounded-xl p-3 bg-zinc-900 border border-white/10 text-white outline-none appearance-none ${!isOwnProfile ? 'cursor-default opacity-70' : 'focus:border-rose-500'}`}
                         >
                             {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                         </select>
@@ -368,8 +479,8 @@ const Profile = () => {
             </Card>
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
+        {/* Right Column (Form, Agents, Badges) - Takes 1/3 width on Desktop */}
+        <div className="space-y-6 h-full flex flex-col">
             
             {/* Recent Form */}
             <Card>
@@ -377,11 +488,11 @@ const Profile = () => {
                     <Activity className="w-5 h-5" />
                     <h3 className="text-sm font-bold uppercase tracking-widest">Recent Form</h3>
                 </div>
-                <div className="flex items-center justify-center gap-6">
+                <div className="flex items-center justify-center gap-4">
                     {recentForm.length > 0 ? (
                         recentForm.map((result, i) => (
                             <div key={i} className="flex flex-col items-center">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-xl transition-all duration-300 hover:scale-110 ${result === 'W' ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-rose-500/20 text-rose-500 border border-rose-500/30'}`}>
+                                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-bold text-lg transition-all duration-300 hover:scale-110 ${result === 'W' ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-rose-500/20 text-rose-500 border border-rose-500/30'}`}>
                                     {result}
                                 </div>
                             </div>
@@ -445,36 +556,36 @@ const Profile = () => {
                     </div>
                 )}
             </Card>
+
+            {/* Badges Section - Moved inside Right Column */}
+            <Card className="flex-1">
+                <div className="text-center mb-6">
+                    <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Achievements</h3>
+                    <p className="text-[10px] text-zinc-600 uppercase tracking-widest mt-1">Click for details</p>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                    {badges.map(badge => (
+                        <button 
+                            key={badge.id}
+                            onClick={() => setActiveBadge(badge)}
+                            className={`
+                                flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-300 text-center
+                                ${badge.active 
+                                    ? `bg-gradient-to-b from-white/10 to-white/5 border-white/20 hover:scale-105 hover:bg-white/10` 
+                                    : `bg-transparent border-white/5 opacity-40 grayscale hover:opacity-60 hover:scale-105 cursor-pointer`}
+                            `}
+                        >
+                            <div className={`p-2 rounded-full mb-1 transition-shadow duration-300 ${badge.active ? `${badge.glowColor} shadow-[0_0_10px_rgba(0,0,0,0)]` : 'bg-white/5'}`}>
+                                {React.cloneElement(badge.icon as React.ReactElement<{ className?: string }>, { className: "w-4 h-4" })}
+                            </div>
+                            <span className={`text-[9px] font-bold truncate w-full ${badge.active ? 'text-white' : 'text-zinc-500'}`}>{badge.name}</span>
+                        </button>
+                    ))}
+                </div>
+            </Card>
         </div>
 
       </div>
-
-      {/* Badges Section - Clickable & Clean */}
-      <Card>
-          <div className="text-center mb-8">
-              <h3 className="text-2xl font-display font-bold tracking-tight text-white">ACHIEVEMENTS</h3>
-              <p className="text-xs text-zinc-500 uppercase tracking-widest mt-1">Click a badge for details</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-              {badges.map(badge => (
-                  <button 
-                      key={badge.id}
-                      onClick={() => setActiveBadge(badge)}
-                      className={`
-                          flex flex-col items-center justify-center p-6 rounded-2xl border transition-all duration-300 text-center
-                          ${badge.active 
-                              ? `bg-gradient-to-b from-white/10 to-white/5 border-white/20 hover:scale-105 hover:bg-white/10` 
-                              : `bg-transparent border-white/5 opacity-40 grayscale hover:opacity-60 hover:scale-105 cursor-pointer`}
-                      `}
-                  >
-                      <div className={`p-4 rounded-full mb-3 transition-shadow duration-300 ${badge.active ? `${badge.glowColor} shadow-[0_0_20px_rgba(0,0,0,0)]` : 'bg-white/5'}`}>
-                          {React.cloneElement(badge.icon as React.ReactElement<{ className?: string }>, { className: "w-6 h-6" })}
-                      </div>
-                      <span className={`text-sm font-bold mb-1 ${badge.active ? 'text-white' : 'text-zinc-500'}`}>{badge.name}</span>
-                  </button>
-              ))}
-          </div>
-      </Card>
 
     </div>
   );

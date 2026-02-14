@@ -3,12 +3,24 @@ import React from 'react';
 import { useGame } from '../context/GameContext';
 import Card from './ui/Card';
 import Button from './ui/Button';
-import { Users, Zap, Shield } from 'lucide-react';
+import { Users, Zap, Shield, AlertTriangle } from 'lucide-react';
+
+interface QueueProps {
+    setCurrentView?: (view: string) => void;
+}
 
 const Queue = () => {
   const { queue, joinQueue, leaveQueue, currentUser, testFillQueue, themeMode, isAdmin } = useGame();
+  
+  // We need to access the navigation function, but since it's passed via props in App.tsx or implicit via Context...
+  // Actually, standardizing navigation to use the context would be cleaner, but for now we'll rely on the existing GameContext
+  // However, `setCurrentView` isn't in GameContext, it's in Layout/App. 
+  // We can trick the joinQueue to fail, but to redirect, we might need to handle it in UI.
+  // Ideally, let's look at how Layout.tsx handles views.
+  // Since we can't change Layout props easily without touching App.tsx, let's use a simple link or alert.
 
   const isInQueue = queue.some(u => u.id === currentUser.id);
+  const hasRiotAccount = !!(currentUser.riotId && currentUser.riotTag);
 
   const getRoleIcon = (role: string) => {
     if (role.includes('Duelist')) return <Zap className="w-3 h-3" />;
@@ -44,9 +56,23 @@ const Queue = () => {
                     Leave Queue
                 </Button>
             ) : (
-                <Button variant="primary" size="lg" onClick={joinQueue} className="min-w-[200px]">
-                    Join Queue
-                </Button>
+                <>
+                    {hasRiotAccount ? (
+                        <Button variant="primary" size="lg" onClick={joinQueue} className="min-w-[200px]">
+                            Join Queue
+                        </Button>
+                    ) : (
+                        <div className="flex flex-col items-center space-y-3">
+                            <Button disabled className="min-w-[200px] bg-zinc-700 cursor-not-allowed text-zinc-400 opacity-50">
+                                Join Queue
+                            </Button>
+                            <div className="flex items-center text-xs text-rose-500 bg-rose-500/10 px-3 py-2 rounded-lg border border-rose-500/20">
+                                <AlertTriangle className="w-3 h-3 mr-2" />
+                                <span>Link Riot Account in Profile to play</span>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
          </div>
       </div>
