@@ -9,7 +9,7 @@ import { MAP_IMAGES } from '../constants';
 import { Trophy, Clock, Ban, AlertTriangle, MessageSquare, Send, ThumbsUp, Flag, X } from 'lucide-react';
 
 const MatchInterface = () => {
-  const { matchState, acceptMatch, draftPlayer, vetoMap, reportResult, sendChatMessage, currentUser, resetMatch, forceTimePass, handleBotAction, themeMode, isAdmin, commendPlayer, submitReport, allUsers } = useGame();
+  const { matchState, acceptMatch, draftPlayer, vetoMap, reportResult, sendChatMessage, currentUser, resetMatch, forceTimePass, handleBotAction, themeMode, isAdmin, commendPlayer, submitReport, matchInteractions, markPlayerAsInteracted } = useGame();
   const [timeLeft, setTimeLeft] = useState(0);
   
   // Mobile UI State
@@ -21,7 +21,6 @@ const MatchInterface = () => {
   const [reportError, setReportError] = useState<string | null>(null);
 
   // Reputation & Modal State
-  const [interactedUsers, setInteractedUsers] = useState<string[]>([]);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportTargetId, setReportTargetId] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState<string>('Toxic Behavior');
@@ -125,13 +124,13 @@ const MatchInterface = () => {
   };
 
   const handleCommend = (targetId: string) => {
-      if (interactedUsers.includes(targetId)) return;
+      if (matchInteractions.includes(targetId)) return;
       commendPlayer(targetId);
-      setInteractedUsers(prev => [...prev, targetId]);
+      markPlayerAsInteracted(targetId);
   };
 
   const openReportModal = (targetId: string) => {
-      if (interactedUsers.includes(targetId)) return;
+      if (matchInteractions.includes(targetId)) return;
       setReportTargetId(targetId);
       setReportModalOpen(true);
       setReportReason('Toxic Behavior');
@@ -140,7 +139,7 @@ const MatchInterface = () => {
   const submitReportReason = () => {
       if (reportTargetId) {
           submitReport(reportTargetId, reportReason);
-          setInteractedUsers(prev => [...prev, reportTargetId]);
+          markPlayerAsInteracted(reportTargetId);
           setReportModalOpen(false);
           setReportTargetId(null);
       }
@@ -504,16 +503,16 @@ const MatchInterface = () => {
                                         <div className="flex items-center space-x-2">
                                             <button 
                                                 onClick={() => handleCommend(player.id)}
-                                                disabled={interactedUsers.includes(player.id)}
-                                                className={`p-2 rounded-lg transition-colors ${interactedUsers.includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-500/20 text-emerald-500'}`}
+                                                disabled={matchInteractions.includes(player.id)}
+                                                className={`p-2 rounded-lg transition-colors ${matchInteractions.includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-500/20 text-emerald-500'}`}
                                                 title="Commend"
                                             >
                                                 <ThumbsUp className="w-4 h-4" />
                                             </button>
                                             <button 
                                                 onClick={() => openReportModal(player.id)}
-                                                disabled={interactedUsers.includes(player.id)}
-                                                className={`p-2 rounded-lg transition-colors ${interactedUsers.includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 text-red-500'}`}
+                                                disabled={matchInteractions.includes(player.id)}
+                                                className={`p-2 rounded-lg transition-colors ${matchInteractions.includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 text-red-500'}`}
                                                 title="Report"
                                             >
                                                 <Flag className="w-4 h-4" />

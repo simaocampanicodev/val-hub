@@ -52,6 +52,8 @@ interface GameContextType {
   acceptFriendRequest: (fromId: string) => void;
   rejectFriendRequest: (fromId: string) => void;
   removeFriend: (friendId: string) => void;
+  matchInteractions: string[];
+  markPlayerAsInteracted: (userId: string) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -91,6 +93,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [reports, setReports] = useState<Report[]>([]);
   const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const [viewProfileId, setViewProfileId] = useState<string | null>(null);
+  
+  // Track users interacted with (commended/reported) in the current match session
+  const [matchInteractions, setMatchInteractions] = useState<string[]>([]);
 
   // Admin Logic: Reverted to username check as requested
   const isAdmin = currentUser.username === 'txger.';
@@ -396,6 +401,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const triggerReadyCheck = (players: User[]) => {
       new Audio(MATCH_FOUND_SOUND).play().catch(() => {});
       setQueue([]); 
+      
+      // Reset local match interactions
+      setMatchInteractions([]);
 
       // Identify bots
       const botIds = players.filter(p => p.isBot).map(p => p.id);
@@ -542,7 +550,14 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       setAllUsers(prev => prev.map(u => u.id === targetUserId ? { ...u, reputation: (u.reputation || 0) + 1 } : u));
       processQuestProgress('GIVE_COMMENDS', 1);
   };
-  const resetMatch = () => setMatchState(null);
+  const resetMatch = () => {
+      setMatchState(null);
+      setMatchInteractions([]); // Reset interactions on manual reset too
+  };
+
+  const markPlayerAsInteracted = (userId: string) => {
+    setMatchInteractions(prev => [...prev, userId]);
+  };
 
   return (
     <GameContext.Provider value={{
@@ -552,7 +567,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       matchHistory, allUsers, reports, submitReport, commendPlayer, resetMatch, forceTimePass, resetSeason,
       themeMode, toggleTheme, handleBotAction,
       viewProfileId, setViewProfileId, claimQuestReward, resetDailyQuests,
-      sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend
+      sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
+      matchInteractions, markPlayerAsInteracted
     }}>
       {children}
     </GameContext.Provider>
