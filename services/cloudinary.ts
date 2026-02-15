@@ -53,8 +53,13 @@ export const uploadToCloudinary = async (file: File): Promise<string> => {
     const data = await response.json();
     console.log('✅ Upload concluído! URL:', data.secure_url);
     
-    // Retornar URL permanente e segura (HTTPS)
-    return data.secure_url;
+    // ✅ CORREÇÃO: Adicionar timestamp para forçar atualização do cache do navegador
+    // Quando o avatar é atualizado, o Cloudinary retorna a mesma URL, mas com cache
+    // Adicionar ?t=timestamp força o navegador a buscar a nova versão
+    const urlWithTimestamp = `${data.secure_url}?t=${Date.now()}`;
+    
+    // Retornar URL permanente e segura (HTTPS) com timestamp
+    return urlWithTimestamp;
     
   } catch (error: any) {
     console.error('❌ Erro no upload para Cloudinary:', error);

@@ -788,42 +788,108 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const sendFriendRequest = async (toId: string) => {
-    if (toId === currentUser.id || currentUser.friends.includes(toId)) return;
-    const targetUser = allUsers.find(u => u.id === toId);
-    if (!targetUser || targetUser.friendRequests.some(r => r.fromId === currentUser.id)) return;
-    await updateDoc(doc(db, COLLECTIONS.USERS, toId), {
-      friend_requests: [...targetUser.friendRequests, { fromId: currentUser.id, toId, timestamp: Date.now() }]
-    });
+    try {
+      console.log('📤 Enviando friend request para:', toId);
+      
+      if (toId === currentUser.id) {
+        console.log('❌ Não pode enviar request para si mesmo');
+        return;
+      }
+      
+      if (currentUser.friends.includes(toId)) {
+        console.log('❌ Já são amigos');
+        return;
+      }
+      
+      const targetUser = allUsers.find(u => u.id === toId);
+      if (!targetUser) {
+        console.log('❌ Usuário alvo não encontrado');
+        return;
+      }
+      
+      if (targetUser.friendRequests.some(r => r.fromId === currentUser.id)) {
+        console.log('❌ Request já enviado');
+        return;
+      }
+      
+      await updateDoc(doc(db, COLLECTIONS.USERS, toId), {
+        friend_requests: [...targetUser.friendRequests, { fromId: currentUser.id, toId, timestamp: Date.now() }]
+      });
+      
+      console.log('✅ Friend request enviado com sucesso!');
+      alert('Friend request sent!');
+    } catch (error) {
+      console.error('❌ Erro ao enviar friend request:', error);
+      alert('Error sending friend request');
+    }
   };
 
   const acceptFriendRequest = async (fromId: string) => {
-    const fromUser = allUsers.find(u => u.id === fromId);
-    if (!fromUser) return;
-    await updateDoc(doc(db, COLLECTIONS.USERS, currentUser.id), {
-      friends: [...currentUser.friends, fromId],
-      friend_requests: currentUser.friendRequests.filter(r => r.fromId !== fromId)
-    });
-    await updateDoc(doc(db, COLLECTIONS.USERS, fromId), {
-      friends: [...fromUser.friends, currentUser.id]
-    });
+    try {
+      console.log('✅ Aceitando friend request de:', fromId);
+      
+      const fromUser = allUsers.find(u => u.id === fromId);
+      if (!fromUser) {
+        console.log('❌ Usuário não encontrado');
+        return;
+      }
+      
+      await updateDoc(doc(db, COLLECTIONS.USERS, currentUser.id), {
+        friends: [...currentUser.friends, fromId],
+        friend_requests: currentUser.friendRequests.filter(r => r.fromId !== fromId)
+      });
+      
+      await updateDoc(doc(db, COLLECTIONS.USERS, fromId), {
+        friends: [...fromUser.friends, currentUser.id]
+      });
+      
+      console.log('✅ Friend request aceito!');
+      alert('Friend request accepted!');
+    } catch (error) {
+      console.error('❌ Erro ao aceitar friend request:', error);
+      alert('Error accepting friend request');
+    }
   };
 
   const rejectFriendRequest = async (fromId: string) => {
-    await updateDoc(doc(db, COLLECTIONS.USERS, currentUser.id), {
-      friend_requests: currentUser.friendRequests.filter(r => r.fromId !== fromId)
-    });
+    try {
+      console.log('❌ Rejeitando friend request de:', fromId);
+      
+      await updateDoc(doc(db, COLLECTIONS.USERS, currentUser.id), {
+        friend_requests: currentUser.friendRequests.filter(r => r.fromId !== fromId)
+      });
+      
+      console.log('✅ Friend request rejeitado');
+    } catch (error) {
+      console.error('❌ Erro ao rejeitar friend request:', error);
+    }
   };
 
   const removeFriend = async (friendId: string) => {
     if (!confirm("Remove friend?")) return;
-    const friend = allUsers.find(u => u.id === friendId);
-    if (!friend) return;
-    await updateDoc(doc(db, COLLECTIONS.USERS, currentUser.id), {
-      friends: currentUser.friends.filter(f => f !== friendId)
-    });
-    await updateDoc(doc(db, COLLECTIONS.USERS, friendId), {
-      friends: friend.friends.filter(f => f !== currentUser.id)
-    });
+    
+    try {
+      console.log('🗑️ Removendo amigo:', friendId);
+      
+      const friend = allUsers.find(u => u.id === friendId);
+      if (!friend) {
+        console.log('❌ Amigo não encontrado');
+        return;
+      }
+      
+      await updateDoc(doc(db, COLLECTIONS.USERS, currentUser.id), {
+        friends: currentUser.friends.filter(f => f !== friendId)
+      });
+      
+      await updateDoc(doc(db, COLLECTIONS.USERS, friendId), {
+        friends: friend.friends.filter(f => f !== currentUser.id)
+      });
+      
+      console.log('✅ Amigo removido');
+    } catch (error) {
+      console.error('❌ Erro ao remover amigo:', error);
+      alert('Error removing friend');
+    }
   };
 
   const commendPlayer = async (targetUserId: string) => {
