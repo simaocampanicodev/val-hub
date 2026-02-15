@@ -790,37 +790,61 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const sendFriendRequest = async (toId: string) => {
     try {
       console.log('📤 Enviando friend request para:', toId);
+      console.log('🔑 Current user ID:', currentUser.id);
+      console.log('🔑 Current user auth UID:', auth.currentUser?.uid);
       
       if (toId === currentUser.id) {
         console.log('❌ Não pode enviar request para si mesmo');
+        alert('Você não pode enviar pedido de amizade para si mesmo!');
         return;
       }
       
       if (currentUser.friends.includes(toId)) {
         console.log('❌ Já são amigos');
+        alert('Vocês já são amigos!');
         return;
       }
       
       const targetUser = allUsers.find(u => u.id === toId);
       if (!targetUser) {
         console.log('❌ Usuário alvo não encontrado');
+        alert('Usuário não encontrado!');
         return;
       }
       
       if (targetUser.friendRequests.some(r => r.fromId === currentUser.id)) {
         console.log('❌ Request já enviado');
+        alert('Você já enviou um pedido de amizade para este usuário!');
         return;
       }
       
+      console.log('📝 Tentando atualizar documento:', toId);
+      console.log('📝 Dados atuais do target:', {
+        friendRequests: targetUser.friendRequests,
+        friends: targetUser.friends
+      });
+      
+      const newRequest = { fromId: currentUser.id, toId, timestamp: Date.now() };
+      const updatedRequests = [...targetUser.friendRequests, newRequest];
+      
+      console.log('📝 Novos friend requests:', updatedRequests);
+      
       await updateDoc(doc(db, COLLECTIONS.USERS, toId), {
-        friend_requests: [...targetUser.friendRequests, { fromId: currentUser.id, toId, timestamp: Date.now() }]
+        friend_requests: updatedRequests
       });
       
       console.log('✅ Friend request enviado com sucesso!');
-      alert('Friend request sent!');
-    } catch (error) {
+      alert('✅ Pedido de amizade enviado!');
+    } catch (error: any) {
       console.error('❌ Erro ao enviar friend request:', error);
-      alert('Error sending friend request');
+      console.error('❌ Erro código:', error.code);
+      console.error('❌ Erro mensagem:', error.message);
+      
+      if (error.code === 'permission-denied') {
+        alert('❌ ERRO DE PERMISSÕES!\n\nAs regras do Firestore não permitem enviar pedidos de amizade.\n\nVocê precisa atualizar as regras do Firestore no Firebase Console.\n\nVeja o arquivo FIRESTORE_RULES.txt para instruções.');
+      } else {
+        alert(`❌ Erro ao enviar pedido de amizade:\n${error.message}`);
+      }
     }
   };
 

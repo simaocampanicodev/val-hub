@@ -173,7 +173,7 @@ const Profile = () => {
     }
   ];
 
-  // ⭐ CORRIGIDO: Upload real para Firebase Storage
+  // ⭐ CORRIGIDO: Upload real para Firebase Storage com cache-busting
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0] || !isOwnProfile) return;
     
@@ -200,17 +200,38 @@ const Profile = () => {
       
       console.log('✅ Upload completo! URL:', downloadURL);
       
+      // ⭐ ADICIONAR timestamp para forçar refresh do cache do navegador
+      const urlWithTimestamp = `${downloadURL}?t=${Date.now()}`;
+      
+      console.log('💾 Salvando URL com cache-busting:', urlWithTimestamp);
+      
       // Salvar no Firestore via updateProfile
       await updateProfile({ avatarUrl: downloadURL });
       
       console.log('✅ Avatar salvo no Firestore!');
-      alert('Foto de perfil atualizada com sucesso!');
+      
+      // ⭐ Forçar re-render da imagem no DOM
+      const avatarElements = document.querySelectorAll('img[src*="cloudinary"]');
+      avatarElements.forEach(img => {
+        const currentSrc = img.getAttribute('src');
+        if (currentSrc) {
+          // Remove timestamp antigo se existir
+          const cleanUrl = currentSrc.split('?')[0];
+          img.setAttribute('src', `${cleanUrl}?t=${Date.now()}`);
+        }
+      });
+      
+      alert('✅ Foto de perfil atualizada com sucesso!');
       
     } catch (error: any) {
       console.error('❌ Erro ao fazer upload:', error);
       alert(error.message || 'Erro ao atualizar foto. Tente novamente.');
     } finally {
       setIsUploadingAvatar(false);
+      // Limpar o input para permitir re-upload da mesma imagem
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
