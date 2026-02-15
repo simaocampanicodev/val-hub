@@ -293,7 +293,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       players.forEach(p => {
         playersData[p.id] = {
           username: p.username,
-          avatarUrl: p.avatarUrl,
+          avatarUrl: p.avatarUrl || null, // ✅ CORRIGIDO: Firestore não aceita undefined
           primaryRole: p.primaryRole,
           points: p.points
         };
