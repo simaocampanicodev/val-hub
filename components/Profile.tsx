@@ -195,34 +195,17 @@ const Profile = () => {
       setIsUploadingAvatar(true);
       console.log('📤 Fazendo upload do avatar para Cloudinary...');
       
-      // ✅ Upload para Cloudinary (substituindo Firebase Storage)
+      // ✅ Upload para Cloudinary
       const downloadURL = await uploadToCloudinary(file);
       
       console.log('✅ Upload completo! URL:', downloadURL);
+      console.log('💾 Salvando URL no Firestore (com timestamp)...');
       
-      // ⭐ CORREÇÃO: Remover timestamp da URL antes de salvar no Firestore
-      // O Cloudinary retorna URL com ?t=timestamp, mas queremos salvar apenas a URL base
-      // para que o cache-busting funcione corretamente em futuras atualizações
-      const cleanURL = downloadURL.split('?')[0];
-      
-      console.log('💾 Salvando URL limpa no Firestore:', cleanURL);
-      
-      // Salvar no Firestore via updateProfile (SEM timestamp)
-      await updateProfile({ avatarUrl: cleanURL });
+      // ✅ CORREÇÃO: Salvar URL completa (COM timestamp) no Firestore
+      // Isso garante que cada upload tenha URL única
+      await updateProfile({ avatarUrl: downloadURL });
       
       console.log('✅ Avatar salvo no Firestore!');
-      
-      // ⭐ Forçar re-render da imagem no DOM
-      const avatarElements = document.querySelectorAll('img[src*="cloudinary"]');
-      avatarElements.forEach(img => {
-        const currentSrc = img.getAttribute('src');
-        if (currentSrc) {
-          // Remove timestamp antigo se existir
-          const cleanUrl = currentSrc.split('?')[0];
-          img.setAttribute('src', `${cleanUrl}?t=${Date.now()}`);
-        }
-      });
-      
       alert('✅ Foto de perfil atualizada com sucesso!');
       
     } catch (error: any) {

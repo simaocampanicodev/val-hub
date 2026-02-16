@@ -485,21 +485,32 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     await updateMatch({ phase: MatchPhase.FINISHED, winner, resultReported: true });
     
+    // ✅ CORREÇÃO: Validar que teamA e teamB existem e são arrays
+    if (!Array.isArray(matchState.teamA) || !Array.isArray(matchState.teamB)) {
+      console.error('❌ Times não são arrays válidos!');
+      console.error('teamA:', matchState.teamA);
+      console.error('teamB:', matchState.teamB);
+      return;
+    }
+    
     const winningTeam = winner === 'A' ? matchState.teamA : matchState.teamB;
     const losingTeam = winner === 'A' ? matchState.teamB : matchState.teamA;
     
     // ✅ CORREÇÃO: Validar times antes de acessar propriedades
-    console.log('👥 Winning team:', winningTeam.filter(u => u).map(u => u.username).join(', '));
-    console.log('👥 Losing team:', losingTeam.filter(u => u).map(u => u.username).join(', '));
+    console.log('👥 Winning team raw:', winningTeam);
+    console.log('👥 Losing team raw:', losingTeam);
     
-    // ✅ CORREÇÃO: Filtrar undefined dos times
-    const validWinningTeam = winningTeam.filter(u => u && u.id);
-    const validLosingTeam = losingTeam.filter(u => u && u.id);
+    // ✅ CORREÇÃO: Filtrar undefined dos times de forma mais segura
+    const validWinningTeam = (winningTeam || []).filter((u: any) => u && u.id && u.username);
+    const validLosingTeam = (losingTeam || []).filter((u: any) => u && u.id && u.username);
+    
+    console.log('👥 Valid winning team:', validWinningTeam.map((u: any) => u.username).join(', '));
+    console.log('👥 Valid losing team:', validLosingTeam.map((u: any) => u.username).join(', '));
     
     if (validWinningTeam.length === 0 || validLosingTeam.length === 0) {
       console.error('❌ Times inválidos! Não é possível finalizar match.');
-      console.error('Winning team válido:', validWinningTeam.length, 'de', winningTeam.length);
-      console.error('Losing team válido:', validLosingTeam.length, 'de', losingTeam.length);
+      console.error('Winning team válido:', validWinningTeam.length, 'de', (winningTeam || []).length);
+      console.error('Losing team válido:', validLosingTeam.length, 'de', (losingTeam || []).length);
       return;
     }
     
@@ -510,17 +521,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       captainA: matchState.captainA!.username,
       captainB: matchState.captainB!.username,
       winner,
-      // ✅ Guardar apenas IDs dos jogadores válidos
-      teamAIds: (winner === 'A' ? validWinningTeam : validLosingTeam).map(u => u.id),
-      teamBIds: (winner === 'B' ? validWinningTeam : validLosingTeam).map(u => u.id),
-      // ✅ Snapshots dos times - sempre Team A e Team B (não winner/loser)
-      teamASnapshot: matchState.teamA.filter(u => u && u.id).map(u => ({
+      // ✅ Guardar IDs corretos baseado no vencedor
+      teamAIds: (winner === 'A' ? validWinningTeam : validLosingTeam).map((u: any) => u.id),
+      teamBIds: (winner === 'B' ? validWinningTeam : validLosingTeam).map((u: any) => u.id),
+      // ✅ Snapshots dos times com validação extra
+      teamASnapshot: (matchState.teamA || []).filter((u: any) => u && u.id && u.username).map((u: any) => ({
         id: u.id,
         username: u.username,
         avatarUrl: u.avatarUrl,
         role: u.primaryRole
       })),
-      teamBSnapshot: matchState.teamB.filter(u => u && u.id).map(u => ({
+      teamBSnapshot: (matchState.teamB || []).filter((u: any) => u && u.id && u.username).map((u: any) => ({
         id: u.id,
         username: u.username,
         avatarUrl: u.avatarUrl,
@@ -528,6 +539,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       })),
       score: `${finalScore.scoreA}-${finalScore.scoreB}`
     };
+    
+    console.log('📝 MatchRecord criado:', {
+      teamACount: record.teamASnapshot.length,
+      teamBCount: record.teamBSnapshot.length,
+      winner: record.winner
+    });
     
     await setDoc(doc(db, COLLECTIONS.MATCHES, matchState.id), { ...record, match_date: serverTimestamp() });
     
