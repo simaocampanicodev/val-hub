@@ -200,13 +200,15 @@ const Profile = () => {
       
       console.log('✅ Upload completo! URL:', downloadURL);
       
-      // ⭐ ADICIONAR timestamp para forçar refresh do cache do navegador
-      const urlWithTimestamp = `${downloadURL}?t=${Date.now()}`;
+      // ⭐ CORREÇÃO: Remover timestamp da URL antes de salvar no Firestore
+      // O Cloudinary retorna URL com ?t=timestamp, mas queremos salvar apenas a URL base
+      // para que o cache-busting funcione corretamente em futuras atualizações
+      const cleanURL = downloadURL.split('?')[0];
       
-      console.log('💾 Salvando URL com cache-busting:', urlWithTimestamp);
+      console.log('💾 Salvando URL limpa no Firestore:', cleanURL);
       
-      // Salvar no Firestore via updateProfile
-      await updateProfile({ avatarUrl: downloadURL });
+      // Salvar no Firestore via updateProfile (SEM timestamp)
+      await updateProfile({ avatarUrl: cleanURL });
       
       console.log('✅ Avatar salvo no Firestore!');
       

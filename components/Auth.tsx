@@ -48,21 +48,6 @@ const Auth = () => {
       }
   };
 
-  const handleManualBypass = () => {
-      // Mock user for Preview environments
-      const randomSuffix = Math.floor(Math.random() * 10000);
-      const mockUser = {
-          email: `guest-${randomSuffix}@valhub.pt`,
-          uid: `guest-${Date.now()}`,
-          photoURL: null
-      };
-      
-      setStep('registration_details');
-      (window as any).__MOCK_USER__ = mockUser;
-      
-      setRegUsername(`GuestPlayer${randomSuffix}`);
-  };
-
   const handleRegistrationSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       setRegError(null);
@@ -87,16 +72,14 @@ const Auth = () => {
           return;
       }
 
-      const userToRegister = pendingAuthUser || (window as any).__MOCK_USER__;
-
-      if (!userToRegister || !userToRegister.email) {
+      if (!pendingAuthUser || !pendingAuthUser.email) {
           setRegError("Authentication error. Please try logging in again.");
           setStep('start');
           return;
       }
 
       completeRegistration({
-          email: userToRegister.email,
+          email: pendingAuthUser.email,
           username: regUsername,
           primaryRole: regPrimary,
           secondaryRole: regSecondary,
@@ -140,14 +123,7 @@ const Auth = () => {
                      <span>Continue with Google</span>
                  </button>
                  
-                 <div className="w-full max-w-sm flex items-center justify-center border-t border-zinc-800 pt-4 mt-2">
-                     <button 
-                        onClick={handleManualBypass}
-                        className="text-xs text-zinc-500 hover:text-white underline"
-                     >
-                        Entrar como Convidado (Modo Teste / Preview)
-                     </button>
-                 </div>
+                 {/* ⭐ REMOVIDO: Botão "Entrar como Convidado" */}
 
                  <div className="text-xs text-zinc-600 mt-2 text-center">
                      By connecting, you agree to our Terms of Service.

@@ -700,27 +700,38 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
 
+    // ⭐ VERIFICAR SE ESTÁ NA QUEUE
+    const isUserInQueue = queue.some(u => u.id === currentUser.id);
+    if (!isUserInQueue) {
+      alert('❌ Você precisa estar na queue para criar uma match de teste!');
+      return;
+    }
+
+    // ⭐ VERIFICAR SE TEM PELO MENOS 2 JOGADORES NA QUEUE
+    if (queue.length < 2) {
+      alert('❌ Precisa ter pelo menos 2 jogadores na queue (você + 1 ou mais)');
+      return;
+    }
+
     try {
       console.log('========================================');
-      console.log('🧪 CRIANDO TEST MATCH DIRETO PARA LIVE');
+      console.log('🧪 CRIANDO TEST MATCH COM JOGADORES DA QUEUE');
       console.log('========================================');
 
-      // Criar 9 bots para completar 10 jogadores
-      const bots = Array.from({ length: 9 }, (_, i) => {
-        const bot = generateBot(`testbot-${Date.now()}-${i}`);
-        bot.riotId = bot.username.split('#')[0];
-        bot.riotTag = 'BOT';
-        return bot;
-      });
-
-      const allPlayers = [currentUser, ...bots];
-      console.log('Jogadores:', allPlayers.map(p => p.username).join(', '));
+      // ⭐ USAR TODOS OS JOGADORES DA QUEUE
+      const queuePlayers = [...queue];
+      console.log(`Jogadores da queue: ${queuePlayers.length}`);
+      console.log('Jogadores:', queuePlayers.map(p => p.username).join(', '));
 
       const matchId = `testmatch_${Date.now()}`;
       
-      // Dividir em 2 teams (admin no Team A)
-      const teamA = allPlayers.slice(0, 5);
-      const teamB = allPlayers.slice(5, 10);
+      // ⭐ RANDOMIZAR E DIVIDIR EM 2 TEAMS
+      const shuffled = [...queuePlayers].sort(() => Math.random() - 0.5);
+      const halfPoint = Math.ceil(shuffled.length / 2);
+      const teamA = shuffled.slice(0, halfPoint);
+      const teamB = shuffled.slice(halfPoint);
+
+      const allPlayers = [...teamA, ...teamB];
 
       const playersData: any = {};
       allPlayers.forEach(p => {
@@ -773,8 +784,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       console.log('✅ Test match criada!');
       console.log(`📍 Map: ${randomMap}`);
-      console.log(`👥 Team A: ${teamA.map(p => p.username).join(', ')}`);
-      console.log(`👥 Team B: ${teamB.map(p => p.username).join(', ')}`);
+      console.log(`👥 Team A (${teamA.length}): ${teamA.map(p => p.username).join(', ')}`);
+      console.log(`👥 Team B (${teamB.length}): ${teamB.map(p => p.username).join(', ')}`);
+      
+      // ⭐ REMOVER JOGADORES DA QUEUE
+      console.log('🗑️ Removendo jogadores da queue...');
+      const deletePromises = queuePlayers.map(p => 
+        deleteDoc(doc(db, COLLECTIONS.QUEUE, p.id))
+      );
+      await Promise.all(deletePromises);
+      console.log('✅ Queue limpa!');
+      
       console.log('========================================');
 
       alert('✅ Test match criada! Você está na fase LIVE.');

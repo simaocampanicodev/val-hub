@@ -84,15 +84,26 @@ const Queue = () => {
             <h3 className="text-xs uppercase tracking-widest text-zinc-500">Queue Lobby</h3>
             {isAdmin && (
                 <div className="flex space-x-2">
-                    <button onClick={testFillQueue} className="text-[10px] text-zinc-500 hover:text-rose-500 uppercase transition-colors">
+                    {/* ⭐ CORRIGIDO: Botão Fill Queue - estilo original */}
+                    <button 
+                        onClick={testFillQueue} 
+                        className="text-[10px] text-zinc-500 hover:text-rose-500 uppercase transition-colors"
+                    >
                         [Admin] Fill Queue
                     </button>
                     <span className="text-zinc-700">|</span>
+                    {/* ⭐ CORRIGIDO: Botão Test Match - mesma cor e fonte, sem seta e "LIVE", desabilitado se não estiver na queue */}
                     <button 
-                        onClick={createTestMatchDirect} 
-                        className="text-[10px] text-zinc-500 hover:text-emerald-500 uppercase transition-colors font-bold"
+                        onClick={createTestMatchDirect}
+                        disabled={!isInQueue}
+                        className={`text-[10px] uppercase transition-colors ${
+                            isInQueue 
+                                ? 'text-zinc-500 hover:text-rose-500 cursor-pointer' 
+                                : 'text-zinc-700 cursor-not-allowed opacity-50'
+                        }`}
+                        title={!isInQueue ? "Você precisa estar na queue para testar" : "Criar match de teste com todos da queue"}
                     >
-                        [Admin] Test Match → LIVE
+                        [Admin] Test Match
                     </button>
                 </div>
             )}
