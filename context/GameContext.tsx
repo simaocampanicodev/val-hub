@@ -773,9 +773,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setCurrentUser(result.user);
       setIsAuthenticated(true);
       setPendingAuthUser(null);
-      alert('Conta criada com sucesso!');
+      alert('Account created successfully!');
     } else {
-      alert(result.error || 'Erro ao criar conta');
+      alert(result.error || 'Error creating account');
     }
   };
 
@@ -861,13 +861,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // ⭐ VERIFICAR SE ESTÁ NA QUEUE
     const isUserInQueue = queue.some(u => u.id === currentUser.id);
     if (!isUserInQueue) {
-      alert('❌ Você precisa estar na queue para criar uma match de teste!');
+      alert('You need to be in the queue to create a test match!');
       return;
     }
 
     // ⭐ VERIFICAR SE TEM PELO MENOS 2 JOGADORES NA QUEUE
     if (queue.length < 2) {
-      alert('❌ Precisa ter pelo menos 2 jogadores na queue (você + 1 ou mais)');
+      alert('You need at least 2 players in the queue (you + 1 or more).');
       return;
     }
 
@@ -955,11 +955,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       console.log('========================================');
 
-      alert('✅ Test match criada! Você está na fase LIVE.');
+      alert('Test match created! You are in the LIVE phase.');
 
     } catch (error) {
       console.error('❌ Erro ao criar test match:', error);
-      alert('Erro ao criar test match. Ver console.');
+      alert('Error creating test match. Check console.');
     }
   };
 
@@ -987,11 +987,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setMatchState(null);
       currentMatchIdRef.current = null;
 
-      alert('✅ Voltou ao lobby!');
+      alert('Back to lobby!');
 
     } catch (error) {
       console.error('❌ Erro ao sair da match:', error);
-      alert('Erro ao sair da match. Ver console.');
+      alert('Error leaving match. Check console.');
     }
   };
 
@@ -1173,26 +1173,26 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (toId === currentUser.id) {
         console.log('❌ Não pode enviar request para si mesmo');
-        alert('Você não pode enviar pedido de amizade para si mesmo!');
+        alert('You cannot send a friend request to yourself!');
         return;
       }
       
       if (currentUser.friends.includes(toId)) {
         console.log('❌ Já são amigos');
-        alert('Vocês já são amigos!');
+        alert('You are already friends!');
         return;
       }
       
       const targetUser = allUsers.find(u => u.id === toId);
       if (!targetUser) {
         console.log('❌ Usuário alvo não encontrado');
-        alert('Usuário não encontrado!');
+        alert('User not found!');
         return;
       }
       
       if (targetUser.friendRequests.some(r => r.fromId === currentUser.id)) {
         console.log('❌ Request já enviado');
-        alert('Você já enviou um pedido de amizade para este usuário!');
+        alert('You have already sent a friend request to this user!');
         return;
       }
       
@@ -1212,16 +1212,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       console.log('✅ Friend request enviado com sucesso!');
-      alert('✅ Pedido de amizade enviado!');
+      alert('Friend request sent!');
     } catch (error: any) {
       console.error('❌ Erro ao enviar friend request:', error);
       console.error('❌ Erro código:', error.code);
       console.error('❌ Erro mensagem:', error.message);
       
       if (error.code === 'permission-denied') {
-        alert('❌ ERRO DE PERMISSÕES!\n\nAs regras do Firestore não permitem enviar pedidos de amizade.\n\nVocê precisa atualizar as regras do Firestore no Firebase Console.\n\nVeja o arquivo FIRESTORE_RULES.txt para instruções.');
+        alert('Permission denied.\n\nFirestore rules do not allow sending friend requests.\n\nUpdate the Firestore rules in the Firebase Console.\n\nSee FIRESTORE_RULES.txt for instructions.');
       } else {
-        alert(`❌ Erro ao enviar pedido de amizade:\n${error.message}`);
+        alert(`Error sending friend request:\n${error.message}`);
       }
     }
   };

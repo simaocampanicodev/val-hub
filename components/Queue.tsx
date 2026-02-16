@@ -36,7 +36,7 @@ const Queue = () => {
           </svg>
           T<span className="text-rose-500">.</span>
         </h1>
-        <p className="text-zinc-500 tracking-widest uppercase text-sm">PORTUGUESE HUB</p>
+        <p className="text-zinc-500 tracking-widest uppercase text-sm">VALORANT HUB</p>
       </div>
 
       <div className="relative w-full max-w-md">
@@ -101,7 +101,7 @@ const Queue = () => {
                                 ? 'text-zinc-500 hover:text-rose-500 cursor-pointer' 
                                 : 'text-zinc-700 cursor-not-allowed opacity-50'
                         }`}
-                        title={!isInQueue ? "Você precisa estar na queue para testar" : "Criar match de teste com todos da queue"}
+                        title={!isInQueue ? "You need to be in the queue to test" : "Create test match with everyone in the queue"}
                     >
                         [Admin] Test Match
                     </button>

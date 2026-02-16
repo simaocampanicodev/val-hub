@@ -18,15 +18,15 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 export const uploadToCloudinary = async (file: File): Promise<string> => {
   const user = auth.currentUser;
   if (!user) {
-    throw new Error('Utilizador não autenticado');
+    throw new Error('User not authenticated');
   }
 
   if (!file.type.startsWith('image/')) {
-    throw new Error('Apenas imagens são permitidas');
+    throw new Error('Only images are allowed');
   }
 
   if (file.size > MAX_SIZE_BYTES) {
-    throw new Error('Imagem muito grande. Máximo 5MB');
+    throw new Error('Image too large. Maximum 5MB');
   }
 
   const formData = new FormData();
@@ -42,14 +42,14 @@ export const uploadToCloudinary = async (file: File): Promise<string> => {
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    const msg = err?.error?.message || 'Erro ao fazer upload';
+    const msg = err?.error?.message || 'Error uploading';
     throw new Error(msg);
   }
 
   const data = await response.json();
   const url = data.secure_url || data.url;
   if (!url) {
-    throw new Error('Resposta do Cloudinary sem URL');
+    throw new Error('Cloudinary response missing URL');
   }
 
   return url;
@@ -63,7 +63,7 @@ export const uploadToCloudinary = async (file: File): Promise<string> => {
 export const removeAvatar = async (): Promise<void> => {
   const user = auth.currentUser;
   if (!user) {
-    throw new Error('Utilizador não autenticado');
+    throw new Error('User not authenticated');
   }
 
   const canvas = document.createElement('canvas');
@@ -77,7 +77,7 @@ export const removeAvatar = async (): Promise<void> => {
   });
 
   if (!blob) {
-    throw new Error('Erro ao criar imagem');
+    throw new Error('Error creating image');
   }
 
   const formData = new FormData();
@@ -91,6 +91,6 @@ export const removeAvatar = async (): Promise<void> => {
   );
 
   if (!response.ok) {
-    throw new Error('Erro ao remover avatar');
+    throw new Error('Error removing avatar');
   }
 };

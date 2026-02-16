@@ -102,7 +102,7 @@ const Auth = () => {
           </svg>
           T<span className="text-rose-500">.</span>
         </h1>
-        <p className="text-zinc-500 tracking-widest uppercase text-sm mt-2">PORTUGUESE VALORANT HUB</p>
+        <p className="text-zinc-500 tracking-widest uppercase text-sm mt-2">VALORANT HUB</p>
       </div>
 
       <Card className="w-full max-w-lg">

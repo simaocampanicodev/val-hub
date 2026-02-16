@@ -50,7 +50,7 @@ export const registerUser = async (data: RegisterData): Promise<{ success: boole
 
     if (!usernameSnapshot.empty) {
       console.log('❌ Username já existe');
-      return { success: false, error: 'Nome de usuário já está em uso' };
+      return { success: false, error: 'Username is already in use' };
     }
 
     // Verificar se email já existe
@@ -59,7 +59,7 @@ export const registerUser = async (data: RegisterData): Promise<{ success: boole
 
     if (!emailSnapshot.empty) {
       console.log('❌ Email já existe');
-      return { success: false, error: 'Email já está em uso' };
+      return { success: false, error: 'Email is already in use' };
     }
 
     // ⭐ USAR Firebase UID como ID do documento
@@ -104,7 +104,7 @@ export const registerUser = async (data: RegisterData): Promise<{ success: boole
 
     if (!userData) {
       console.error('❌ Erro: documento não encontrado após criar');
-      return { success: false, error: 'Erro ao criar conta' };
+      return { success: false, error: 'Error creating account' };
     }
 
     const user: User = {
@@ -135,10 +135,10 @@ export const registerUser = async (data: RegisterData): Promise<{ success: boole
     
     // Mensagens de erro mais específicas
     if (error.code === 'permission-denied') {
-      return { success: false, error: 'Erro de permissões no Firestore. Verifique as regras de segurança.' };
+      return { success: false, error: 'Firestore permission error. Check security rules.' };
     }
     
-    return { success: false, error: error.message || 'Erro ao criar conta' };
+    return { success: false, error: error.message || 'Error creating account' };
   }
 };
 
@@ -153,7 +153,7 @@ export const loginUser = async (email: string, password: string): Promise<{ succ
 
     if (querySnapshot.empty) {
       console.log('❌ Usuário não encontrado');
-      return { success: false, error: 'Email ou senha incorretos' };
+      return { success: false, error: 'Incorrect email or password' };
     }
 
     const userDoc = querySnapshot.docs[0];
@@ -183,7 +183,7 @@ export const loginUser = async (email: string, password: string): Promise<{ succ
     return { success: true, user };
   } catch (error: any) {
     console.error('❌ Erro ao fazer login:', error);
-    return { success: false, error: 'Erro ao fazer login' };
+    return { success: false, error: 'Error logging in' };
   }
 };
 

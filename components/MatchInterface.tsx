@@ -201,7 +201,7 @@ const MatchInterface = () => {
             <div className="absolute top-2 right-2 z-[70]">
                 <button
                     onClick={() => {
-                        if (confirm('Tem certeza que quer sair desta match? A match será deletada.')) {
+                        if (confirm('Are you sure you want to leave this match? The match will be deleted.')) {
                             exitMatchToLobby();
                         }
                     }}

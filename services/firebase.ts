@@ -29,13 +29,13 @@ export const signInWithGoogle = async (): Promise<FirebaseUser> => {
     
     if (error.code === 'auth/unauthorized-domain') {
         const currentDomain = window.location.hostname;
-        alert(`DOMÍNIO NÃO AUTORIZADO!\n\nO Firebase bloqueou este site por segurança.\n\nSOLUÇÃO:\n1. Vá à consola do Firebase > Authentication > Settings > Authorized Domains.\n2. Adicione este domínio: ${currentDomain}`);
+        alert(`UNAUTHORIZED DOMAIN!\n\nFirebase has blocked this site for security.\n\nFIX:\n1. Go to Firebase Console > Authentication > Settings > Authorized Domains.\n2. Add this domain: ${currentDomain}`);
     } else if (error.code === 'auth/configuration-not-found' || error.code === 'auth/api-key-not-valid. please pass a valid api key.') {
-        alert("ERRO DE CONFIGURAÇÃO: As chaves API no ficheiro 'services/firebase.ts' estão incorretas.");
+        alert("Configuration error: API keys in 'services/firebase.ts' are incorrect.");
     } else if (error.code === 'auth/popup-closed-by-user') {
         // Usuário fechou a janela propositadamente, ignorar.
     } else {
-        alert(`Erro de Autenticação (${error.code}): ${error.message}`);
+        alert(`Authentication error (${error.code}): ${error.message}`);
     }
     throw error;
   }

@@ -185,13 +185,13 @@ const Profile = () => {
     
     // Validar tipo de arquivo
     if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione uma imagem válida');
+      alert('Please select a valid image.');
       return;
     }
     
     // Validar tamanho (máx 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Imagem muito grande! Máximo 5MB');
+      alert('Image too large! Maximum 5MB.');
       return;
     }
     
@@ -210,11 +210,11 @@ const Profile = () => {
       await updateProfile({ avatarUrl: downloadURL });
       
       console.log('✅ Avatar salvo no Firestore!');
-      alert('✅ Foto de perfil atualizada com sucesso!');
+      alert('Profile photo updated successfully!');
       
     } catch (error: any) {
       console.error('❌ Erro ao fazer upload:', error);
-      alert(error.message || 'Erro ao atualizar foto. Tente novamente.');
+      alert(error.message || 'Error updating photo. Try again.');
     } finally {
       setIsUploadingAvatar(false);
       // Limpar o input para permitir re-upload da mesma imagem
@@ -227,7 +227,7 @@ const Profile = () => {
   const handleRemoveAvatar = async () => {
     if (!isOwnProfile) return;
     
-    if (!confirm('Tem certeza que deseja remover sua foto de perfil?')) {
+    if (!confirm('Are you sure you want to remove your profile photo?')) {
       return;
     }
     
@@ -244,11 +244,11 @@ const Profile = () => {
       await updateProfile({ avatarUrl: undefined });
       
       console.log('✅ Avatar removido com sucesso!');
-      alert('Foto de perfil removida com sucesso!');
+      alert('Profile photo removed successfully!');
       
     } catch (error: any) {
       console.error('❌ Erro ao remover avatar:', error);
-      alert(error.message || 'Erro ao remover foto. Tente novamente.');
+      alert(error.message || 'Error removing photo. Try again.');
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -288,11 +288,11 @@ const Profile = () => {
       setIsIdentityDirty(false);
       
       // Feedback visual
-      alert('Nome atualizado com sucesso!');
+      alert('Name updated successfully!');
       
     } catch (error) {
       console.error('❌ Erro ao salvar nome:', error);
-      setIdentityError('Erro ao salvar. Tente novamente.');
+      setIdentityError('Error saving. Try again.');
     }
   };
 
@@ -438,7 +438,7 @@ const Profile = () => {
                             <button 
                                 onClick={handleRemoveAvatar}
                                 className="absolute -bottom-2 -right-2 w-8 h-8 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110"
-                                title="Remover foto"
+                                title="Remove photo"
                             >
                                 <Trash2 className="text-white w-4 h-4" />
                             </button>
@@ -600,7 +600,7 @@ const Profile = () => {
                                      <span className="text-zinc-500 font-bold text-xl">#</span>
                                      <div className="w-28 relative">
                                         <input 
-                                            placeholder="TAG" 
+                                            placeholder="Tag" 
                                             className={`w-full border rounded-xl p-3 outline-none focus:border-rose-500 transition-colors ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}`}
                                             value={riotTagInput}
                                             onChange={handleRiotTagChange}
