@@ -451,7 +451,7 @@ const MatchInterface = () => {
                         </div>
 
                         {/* Match Control - SCROLLABLE CONTENT IF NEEDED, FIXED POSITION */}
-                        <Card className="flex flex-col items-center space-y-4 py-6 shrink-0 max-h-[250px] overflow-y-auto custom-scrollbar">
+                        <Card className="flex flex-col items-center space-y-4 py-6 shrink-0 max-h-[400px] overflow-y-auto custom-scrollbar">
                             <h3 className="uppercase tracking-widest text-zinc-400 text-xs">Match Control</h3>
                             
                             {!canReport ? (
@@ -465,43 +465,140 @@ const MatchInterface = () => {
                                 </div>
                             ) : (
                                 <div className="w-full max-w-md space-y-4 text-center">
-                                    <p className={`text-lg ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>Final Score</p>
-                                    <div className="flex items-center justify-center space-x-4">
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-xs text-zinc-500 mb-1">Team {matchState.captainA?.username}</span>
-                                                <input 
-                                                    type="number"
-                                                    value={scoreA}
-                                                    onChange={(e) => setScoreA(e.target.value)}
-                                                    className={`w-16 h-16 text-center text-3xl font-bold rounded-2xl outline-none border focus:border-rose-500 ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}`}
-                                                />
+                                    {/* ⭐ NOVO: Verificar se jogador já reportou */}
+                                    {matchState.playerReports.some(r => r.playerId === currentUser.id) ? (
+                                        // ⭐ Jogador já reportou - mostrar status de verificação
+                                        <div className="space-y-4">
+                                            <div className="flex flex-col items-center space-y-3">
+                                                {/* Loading Spinner */}
+                                                <div className="relative">
+                                                    <div className="w-16 h-16 border-4 border-zinc-800 border-t-rose-500 rounded-full animate-spin"></div>
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <Trophy className="w-6 h-6 text-rose-500" />
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="text-center">
+                                                    <p className={`text-lg font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
+                                                        Verificação em Progresso
+                                                    </p>
+                                                    <p className="text-sm text-zinc-500">
+                                                        Aguardando outros jogadores reportarem...
+                                                    </p>
+                                                    <p className="text-xs text-rose-500 font-bold mt-2">
+                                                        {matchState.playerReports.length} / 3 players voted
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <span className="text-xl text-zinc-500 font-bold">:</span>
-                                            <div className="flex flex-col items-center">
-                                                <span className="text-xs text-zinc-500 mb-1">Team {matchState.captainB?.username}</span>
-                                                <input 
-                                                    type="number"
-                                                    value={scoreB}
-                                                    onChange={(e) => setScoreB(e.target.value)}
-                                                    className={`w-16 h-16 text-center text-3xl font-bold rounded-2xl outline-none border focus:border-rose-500 ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}`}
-                                                />
-                                            </div>
-                                    </div>
 
-                                    {reportError && (
-                                        <div className="p-3 bg-red-500/10 text-red-500 text-sm rounded-lg flex items-center justify-center">
-                                            <AlertTriangle className="w-4 h-4 mr-2" />
-                                            {reportError}
+                                            {/* ⭐ Mostrar quem já votou e o que votaram */}
+                                            <div className="space-y-2 mt-6">
+                                                <p className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Votes Submitted:</p>
+                                                <div className="space-y-2">
+                                                    {matchState.playerReports.map((report, index) => (
+                                                        <div 
+                                                            key={index}
+                                                            className={`flex items-center justify-between p-2 rounded-lg ${themeMode === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}
+                                                        >
+                                                            <div className="flex items-center space-x-2">
+                                                                <div className="w-6 h-6 rounded-full bg-rose-500/20 flex items-center justify-center">
+                                                                    <User className="w-3 h-3 text-rose-500" />
+                                                                </div>
+                                                                <span className="text-sm font-bold">{report.playerName}</span>
+                                                            </div>
+                                                            <span className="text-sm font-mono font-bold text-zinc-400">
+                                                                {report.scoreA} - {report.scoreB}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* ⭐ Análise de consenso */}
+                                            {(() => {
+                                                const voteCounts = new Map<string, number>();
+                                                matchState.playerReports.forEach(r => {
+                                                    const key = `${r.scoreA}-${r.scoreB}`;
+                                                    voteCounts.set(key, (voteCounts.get(key) || 0) + 1);
+                                                });
+                                                
+                                                const maxVotes = Math.max(...Array.from(voteCounts.values()));
+                                                const leadingResult = Array.from(voteCounts.entries())
+                                                    .find(([_, count]) => count === maxVotes);
+                                                
+                                                if (leadingResult && maxVotes >= 2) {
+                                                    return (
+                                                        <div className="mt-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+                                                            <p className="text-xs text-rose-500 font-bold">
+                                                                Leading Result: {leadingResult[0]} ({maxVotes} votes)
+                                                            </p>
+                                                            {maxVotes < 3 && (
+                                                                <p className="text-xs text-zinc-500 mt-1">
+                                                                    Need {3 - maxVotes} more vote{3 - maxVotes > 1 ? 's' : ''} to confirm
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
                                         </div>
-                                    )}
+                                    ) : (
+                                        // ⭐ Jogador ainda não reportou - mostrar form
+                                        <>
+                                            <p className={`text-lg ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>Final Score</p>
+                                            <div className="flex items-center justify-center space-x-4">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-xs text-zinc-500 mb-1">Team {matchState.captainA?.username}</span>
+                                                        <input 
+                                                            type="number"
+                                                            value={scoreA}
+                                                            onChange={(e) => setScoreA(e.target.value)}
+                                                            className={`w-16 h-16 text-center text-3xl font-bold rounded-2xl outline-none border focus:border-rose-500 ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}`}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xl text-zinc-500 font-bold">:</span>
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-xs text-zinc-500 mb-1">Team {matchState.captainB?.username}</span>
+                                                        <input 
+                                                            type="number"
+                                                            value={scoreB}
+                                                            onChange={(e) => setScoreB(e.target.value)}
+                                                            className={`w-16 h-16 text-center text-3xl font-bold rounded-2xl outline-none border focus:border-rose-500 ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'}`}
+                                                        />
+                                                    </div>
+                                            </div>
 
-                                    <Button 
-                                        variant="primary" 
-                                        className="w-full mt-2"
-                                        onClick={handleReportSubmit}
-                                    >
-                                        Submit Result
-                                    </Button>
+                                            {/* ⭐ Mostrar votos já existentes antes de submeter */}
+                                            {matchState.playerReports.length > 0 && (
+                                                <div className="mt-4 p-3 bg-zinc-900/50 rounded-lg border border-white/5">
+                                                    <p className="text-xs text-zinc-500 mb-2">{matchState.playerReports.length} player{matchState.playerReports.length > 1 ? 's' : ''} already voted:</p>
+                                                    <div className="space-y-1">
+                                                        {matchState.playerReports.map((report, index) => (
+                                                            <div key={index} className="text-xs text-zinc-400">
+                                                                <span className="font-bold">{report.playerName}</span>: {report.scoreA} - {report.scoreB}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {reportError && (
+                                                <div className="p-3 bg-red-500/10 text-red-500 text-sm rounded-lg flex items-center justify-center">
+                                                    <AlertTriangle className="w-4 h-4 mr-2" />
+                                                    {reportError}
+                                                </div>
+                                            )}
+
+                                            <Button 
+                                                variant="primary" 
+                                                className="w-full mt-2"
+                                                onClick={handleReportSubmit}
+                                            >
+                                                Submit Result
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </Card>

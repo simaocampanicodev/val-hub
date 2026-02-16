@@ -99,6 +99,14 @@ export interface MatchScore {
   scoreB: number;
 }
 
+export interface PlayerReport {
+  playerId: string;
+  playerName: string;
+  scoreA: number;
+  scoreB: number;
+  timestamp: number;
+}
+
 export interface ChatMessage {
   id: string;
   senderId: string;
@@ -125,6 +133,7 @@ export interface MatchState {
   winner: 'A' | 'B' | null;
   reportA: MatchScore | null; 
   reportB: MatchScore | null;
+  playerReports: PlayerReport[]; // ⭐ NOVO: Lista de reports de todos os jogadores
   readyPlayers: string[]; 
   readyExpiresAt?: number;
   chat: ChatMessage[];

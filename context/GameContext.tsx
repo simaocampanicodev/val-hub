@@ -198,6 +198,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           winner: userMatch.winner || null,
           reportA: userMatch.reportA || null,
           reportB: userMatch.reportB || null,
+          playerReports: userMatch.playerReports || [], // ⭐ NOVO: Carregar reports dos jogadores
           readyPlayers: userMatch.readyPlayers || [],
           readyExpiresAt: userMatch.readyExpiresAt ? (userMatch.readyExpiresAt as any).toMillis() : Date.now() + 60000,
           chat: userMatch.chat || []
@@ -372,6 +373,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           timestamp: Date.now(),
           isSystem: true
         }],
+        playerReports: [], // ⭐ NOVO: Array para múltiplos reports
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         resultReported: false
@@ -768,23 +770,93 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const reportResult = async (scoreA: number, scoreB: number): Promise<{ success: boolean, message?: string }> => {
     if (!matchState) return { success: false };
-    const isTeamA = matchState.teamA.some(u => u.id === currentUser.id);
-    const isTeamB = matchState.teamB.some(u => u.id === currentUser.id);
-    const forcedReport = isAdmin && !isTeamA && !isTeamB;
-    const reportData = { scoreA, scoreB };
-    let newReportA = matchState.reportA;
-    let newReportB = matchState.reportB;
-    if (isTeamA || forcedReport) newReportA = reportData;
-    if (isTeamB || forcedReport) newReportB = reportData;
-    await updateMatch({ reportA: newReportA, reportB: newReportB });
-    if (newReportA && newReportB) {
-      if (newReportA.scoreA === newReportB.scoreA && newReportA.scoreB === newReportB.scoreB) {
-        await finalizeMatch(newReportA);
-        return { success: true };
-      }
-      return { success: false, message: "Scores do not match." };
+    
+    console.log('📊 Reportando resultado:', { scoreA, scoreB });
+    
+    // ⭐ NOVO SISTEMA: Verificar se já reportou
+    const existingReport = matchState.playerReports.find(r => r.playerId === currentUser.id);
+    if (existingReport) {
+      console.log('⚠️ Jogador já reportou resultado');
+      return { success: false, message: "You have already submitted a result." };
     }
-    return { success: true, message: "Score submitted." };
+    
+    // ⭐ Criar novo report do jogador
+    const newReport = {
+      playerId: currentUser.id,
+      playerName: currentUser.username,
+      scoreA,
+      scoreB,
+      timestamp: Date.now()
+    };
+    
+    console.log('📝 Novo report:', newReport);
+    
+    // ⭐ Adicionar ao array de reports
+    const updatedReports = [...matchState.playerReports, newReport];
+    
+    console.log(`📊 Total de reports: ${updatedReports.length}`);
+    
+    // ⭐ VERIFICAR SE ALGUM RESULTADO TEM 3+ VOTOS
+    const resultCounts = new Map<string, { count: number, scoreA: number, scoreB: number, voters: string[] }>();
+    
+    updatedReports.forEach(report => {
+      const key = `${report.scoreA}-${report.scoreB}`;
+      const existing = resultCounts.get(key);
+      
+      if (existing) {
+        existing.count++;
+        existing.voters.push(report.playerName);
+      } else {
+        resultCounts.set(key, {
+          count: 1,
+          scoreA: report.scoreA,
+          scoreB: report.scoreB,
+          voters: [report.playerName]
+        });
+      }
+    });
+    
+    console.log('📊 Contagem de resultados:');
+    resultCounts.forEach((data, key) => {
+      console.log(`  ${key}: ${data.count} votos (${data.voters.join(', ')})`);
+    });
+    
+    // ⭐ Procurar resultado com 3+ votos
+    let consensusResult = null;
+    for (const [key, data] of resultCounts.entries()) {
+      if (data.count >= 3) {
+        consensusResult = data;
+        console.log(`✅ CONSENSO ALCANÇADO! Resultado ${key} tem ${data.count} votos`);
+        break;
+      }
+    }
+    
+    // ⭐ Atualizar no Firestore
+    await updateMatch({ 
+      playerReports: updatedReports,
+      // Manter compatibilidade com sistema antigo
+      reportA: matchState.reportA,
+      reportB: matchState.reportB
+    });
+    
+    // ⭐ Se temos consenso, finalizar a match
+    if (consensusResult) {
+      console.log('🎉 Finalizando match com resultado consensual');
+      await finalizeMatch({ 
+        scoreA: consensusResult.scoreA, 
+        scoreB: consensusResult.scoreB 
+      });
+      return { success: true, message: "Match finalized! Result verified by 3+ players." };
+    }
+    
+    // ⭐ Caso contrário, aguardar mais reports
+    const needMore = 3 - updatedReports.length;
+    console.log(`⏳ Aguardando mais ${needMore} report(s)`);
+    
+    return { 
+      success: true, 
+      message: `Score submitted! Waiting for ${needMore} more player${needMore > 1 ? 's' : ''} to verify...` 
+    };
   };
 
   const sendFriendRequest = async (toId: string) => {
