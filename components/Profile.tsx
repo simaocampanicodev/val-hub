@@ -81,15 +81,18 @@ const Profile = () => {
 
   // --- STATS CALCULATION ---
   const userMatches = useMemo(() => {
-    return matchHistory.filter(m => 
-        m.teamAIds.includes(profileUser.id) || m.teamBIds.includes(profileUser.id)
-    );
+    return matchHistory.filter(m => {
+        const a = m.teamAIds || [];
+        const b = m.teamBIds || [];
+        return a.includes(profileUser.id) || b.includes(profileUser.id);
+    });
   }, [matchHistory, profileUser.id]);
 
   const recentForm = useMemo(() => {
-      // Get last 4 matches
       return userMatches.slice(0, 4).map(m => {
-          const myTeam = m.teamAIds.includes(profileUser.id) ? 'A' : 'B';
+          const a = m.teamAIds || [];
+          const b = m.teamBIds || [];
+          const myTeam = a.includes(profileUser.id) ? 'A' : 'B';
           return m.winner === myTeam ? 'W' : 'L';
       });
   }, [userMatches, profileUser.id]);
@@ -100,8 +103,9 @@ const Profile = () => {
       userMatches.forEach(m => {
           if (!stats[m.map]) stats[m.map] = { played: 0, wins: 0 };
           stats[m.map].played += 1;
-          
-          const myTeam = m.teamAIds.includes(profileUser.id) ? 'A' : 'B';
+          const a = m.teamAIds || [];
+          const b = m.teamBIds || [];
+          const myTeam = a.includes(profileUser.id) ? 'A' : 'B';
           if (m.winner === myTeam) stats[m.map].wins += 1;
       });
 

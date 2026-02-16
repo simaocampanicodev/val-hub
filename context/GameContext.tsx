@@ -64,6 +64,8 @@ interface GameContextType {
   acceptFriendRequest: (fromId: string) => Promise<void>;
   rejectFriendRequest: (fromId: string) => Promise<void>;
   removeFriend: (friendId: string) => Promise<void>;
+  matchInteractions: string[];
+  markPlayerAsInteracted: (playerId: string) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -87,6 +89,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [reports, setReports] = useState<Report[]>([]);
   const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const [viewProfileId, setViewProfileId] = useState<string | null>(null);
+  const [matchInteractions, setMatchInteractions] = useState<string[]>([]);
   
   const allUsersRef = useRef<User[]>([]);
   const currentMatchIdRef = useRef<string | null>(null);
@@ -232,13 +235,41 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           wins: data.wins,
           losses: data.losses,
           winstreak: data.winstreak,
-          reputation: data.reputation
+          reputation: data.reputation,
+          activeQuests: data.active_quests || [],
+          lastDailyQuestGeneration: data.lastDailyQuestGeneration,
+          lastMonthlyQuestGeneration: data.lastMonthlyQuestGeneration
         }));
       }
     });
     
     return () => unsubscribe();
   }, [isAuthenticated, currentUser.id]);
+
+  // 🔥 LISTENER: Match History (histórico de partidas para MatchHistory e Profile)
+  useEffect(() => {
+    const q = query(collection(db, COLLECTIONS.MATCHES), orderBy('match_date', 'desc'), limit(100));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const records: MatchRecord[] = snapshot.docs.map(docSnap => {
+        const d = docSnap.data();
+        return {
+          id: docSnap.id,
+          date: d.date ?? (d.match_date?.toMillis?.() ?? Date.now()),
+          map: d.map ?? 'Ascent',
+          captainA: d.captainA ?? '',
+          captainB: d.captainB ?? '',
+          winner: d.winner ?? 'A',
+          teamAIds: Array.isArray(d.teamAIds) ? d.teamAIds : (d.team_a_ids || []),
+          teamBIds: Array.isArray(d.teamBIds) ? d.teamBIds : (d.team_b_ids || []),
+          teamASnapshot: Array.isArray(d.teamASnapshot) ? d.teamASnapshot : (d.team_a_snapshot || []),
+          teamBSnapshot: Array.isArray(d.teamBSnapshot) ? d.teamBSnapshot : (d.team_b_snapshot || []),
+          score: d.score ?? '0-0'
+        };
+      });
+      setMatchHistory(records);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // ⭐ AUTO-REMOVE DA QUEUE AO SAIR
   useEffect(() => {
@@ -605,9 +636,62 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // [Quests code continua igual...]
-  const generateQuestsIfNeeded = (forceReset = false) => {
-    // ... código igual ao original
-  };
+  const generateQuestsIfNeeded = useCallback((forceReset = false) => {
+    if (!isAuthenticated || !currentUser.id || currentUser.id === 'user-1') return;
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+    const oneMonth = 30 * oneDay;
+    const lastDaily = currentUser.lastDailyQuestGeneration ?? 0;
+    const lastMonthly = currentUser.lastMonthlyQuestGeneration ?? 0;
+    const dailyExpired = (now - lastDaily) >= oneDay;
+    const monthlyExpired = (now - lastMonthly) >= oneMonth;
+    const hasNoQuests = !currentUser.activeQuests || currentUser.activeQuests.length === 0;
+
+    if (!forceReset && !hasNoQuests && !dailyExpired && !monthlyExpired) return;
+
+    const dailyQuests = QUEST_POOL.filter(q => q.category === 'DAILY');
+    const monthlyQuests = QUEST_POOL.filter(q => q.category === 'MONTHLY');
+    const uniqueQuests = QUEST_POOL.filter(q => q.category === 'UNIQUE');
+
+    let next: UserQuest[] = [];
+    if (forceReset || hasNoQuests || dailyExpired) {
+      const pick = (arr: typeof dailyQuests, n: number) => {
+        const shuffled = [...arr].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, n).map(q => ({ questId: q.id, progress: 0, completed: false, claimed: false }));
+      };
+      next = [...pick(dailyQuests, 2), ...pick(monthlyQuests, 2), ...uniqueQuests.map(q => ({ questId: q.id, progress: 0, completed: false, claimed: false }))];
+    } else {
+      next = (currentUser.activeQuests || []).map(uq => {
+        const def = QUEST_POOL.find(q => q.id === uq.questId);
+        if (!def) return uq;
+        if (def.category === 'DAILY' && dailyExpired) return { ...uq, progress: 0, completed: false, claimed: false };
+        if (def.category === 'MONTHLY' && monthlyExpired) return { ...uq, progress: 0, completed: false, claimed: false };
+        return uq;
+      });
+      if (dailyExpired) {
+        const existingDailyIds = next.filter(uq => QUEST_POOL.find(q => q.id === uq.questId)?.category === 'DAILY').map(uq => uq.questId);
+        const toAdd = dailyQuests.filter(q => !existingDailyIds.includes(q.id)).sort(() => Math.random() - 0.5).slice(0, 2 - existingDailyIds.length);
+        toAdd.forEach(q => next.push({ questId: q.id, progress: 0, completed: false, claimed: false }));
+      }
+      if (monthlyExpired) {
+        const existingMonthlyIds = next.filter(uq => QUEST_POOL.find(q => q.id === uq.questId)?.category === 'MONTHLY').map(uq => uq.questId);
+        const toAdd = monthlyQuests.filter(q => !existingMonthlyIds.includes(q.id)).sort(() => Math.random() - 0.5).slice(0, 2 - existingMonthlyIds.length);
+        toAdd.forEach(q => next.push({ questId: q.id, progress: 0, completed: false, claimed: false }));
+      }
+    }
+
+    const updates: Partial<User> = { activeQuests: next };
+    if (forceReset || hasNoQuests || dailyExpired) updates.lastDailyQuestGeneration = now;
+    if (forceReset || hasNoQuests || monthlyExpired) updates.lastMonthlyQuestGeneration = now;
+    updateProfile(updates);
+  }, [isAuthenticated, currentUser.id, currentUser.activeQuests, currentUser.lastDailyQuestGeneration, currentUser.lastMonthlyQuestGeneration]);
+
+  // ⭐ Gerar missões quando o utilizador não tem nenhuma (novas contas ou reset)
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser.id || currentUser.id === 'user-1') return;
+    const quests = currentUser.activeQuests || [];
+    if (quests.length === 0) generateQuestsIfNeeded(true);
+  }, [isAuthenticated, currentUser.id, currentUser.activeQuests?.length, generateQuestsIfNeeded]);
 
   const processQuestProgress = (type: QuestType, amount = 1, forceValue: number | null = null) => {
     if (!isAuthenticated || !currentUser.activeQuests) return;
@@ -1040,12 +1124,14 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log(`  ${key}: ${data.count} votos (${data.voters.join(', ')})`);
     });
     
-    // ⭐ Procurar resultado com 3+ votos
+    // ⭐ Consenso: maioria dos jogadores na partida (mín. 2). Test match com 3 pessoas = 2 votos iguais bastam.
+    const totalPlayers = (matchState.players || []).length;
+    const requiredVotes = Math.max(2, Math.ceil(totalPlayers / 2));
     let consensusResult = null;
     for (const [key, data] of resultCounts.entries()) {
-      if (data.count >= 3) {
+      if (data.count >= requiredVotes) {
         consensusResult = data;
-        console.log(`✅ CONSENSO ALCANÇADO! Resultado ${key} tem ${data.count} votos`);
+        console.log(`✅ CONSENSO ALCANÇADO! Resultado ${key} tem ${data.count} votos (necessário ${requiredVotes})`);
         break;
       }
     }
@@ -1260,16 +1346,25 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [matchState]);
 
+  const markPlayerAsInteracted = useCallback((playerId: string) => {
+    setMatchInteractions(prev => prev.includes(playerId) ? prev : [...prev, playerId]);
+  }, []);
+
+  useEffect(() => {
+    if (!matchState) setMatchInteractions([]);
+  }, [matchState?.id]);
+
   return (
     <GameContext.Provider value={{
       isAuthenticated, isAdmin, completeRegistration, logout, currentUser, pendingAuthUser,
       updateProfile, linkRiotAccount, queue, joinQueue, leaveQueue, testFillQueue,
-      createTestMatchDirect, exitMatchToLobby, // ⭐ NOVO: Funções de teste admin
+      createTestMatchDirect, exitMatchToLobby,
       matchState, acceptMatch, draftPlayer, vetoMap, reportResult, sendChatMessage,
       matchHistory, allUsers, reports, submitReport, commendPlayer, resetMatch,
       forceTimePass, resetSeason, themeMode, toggleTheme, handleBotAction,
       viewProfileId, setViewProfileId, claimQuestReward, resetDailyQuests,
-      sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend
+      sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
+      matchInteractions, markPlayerAsInteracted
     }}>
       {children}
     </GameContext.Provider>

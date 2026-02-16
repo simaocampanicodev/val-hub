@@ -71,7 +71,9 @@ const MatchInterface = () => {
   const canReport = minutesPassed >= 20;
 
   // Determine Result Title & Color
-  const userTeam = matchState.teamA.some(u => u.id === currentUser.id) ? 'A' : (matchState.teamB.some(u => u.id === currentUser.id) ? 'B' : null);
+  const teamA = matchState.teamA || [];
+  const teamB = matchState.teamB || [];
+  const userTeam = teamA.some(u => u?.id === currentUser.id) ? 'A' : (teamB.some(u => u?.id === currentUser.id) ? 'B' : null);
   let resultTitle = "MATCH ENDED";
   let resultColor = themeMode === 'dark' ? 'text-white' : 'text-black';
   
@@ -123,13 +125,13 @@ const MatchInterface = () => {
   };
 
   const handleCommend = (targetId: string) => {
-      if (matchInteractions.includes(targetId)) return;
+      if ((matchInteractions || []).includes(targetId)) return;
       commendPlayer(targetId);
       markPlayerAsInteracted(targetId);
   };
 
   const openReportModal = (targetId: string) => {
-      if (matchInteractions.includes(targetId)) return;
+      if ((matchInteractions || []).includes(targetId)) return;
       setReportTargetId(targetId);
       setReportModalOpen(true);
       setReportReason('Toxic Behavior');
@@ -153,7 +155,7 @@ const MatchInterface = () => {
 
   // --- READY CHECK PHASE ---
   if (matchState.phase === MatchPhase.READY_CHECK) {
-      const hasAccepted = matchState.readyPlayers.includes(currentUser.id);
+      const hasAccepted = (matchState.readyPlayers || []).includes(currentUser.id);
       const readyCount = matchState.readyPlayers.length;
       
       return (
@@ -508,7 +510,7 @@ const MatchInterface = () => {
                             ) : (
                                 <div className="w-full max-w-md space-y-4 text-center">
                                     {/* ⭐ NOVO: Verificar se jogador já reportou */}
-                                    {matchState.playerReports.some(r => r.playerId === currentUser.id) ? (
+                                    {(matchState.playerReports || []).some(r => r.playerId === currentUser.id) ? (
                                         // ⭐ Jogador já reportou - mostrar status de verificação
                                         <div className="space-y-4">
                                             <div className="flex flex-col items-center space-y-3">
@@ -528,7 +530,7 @@ const MatchInterface = () => {
                                                         Waiting for other players to report...
                                                     </p>
                                                     <p className="text-xs text-rose-500 font-bold mt-2">
-                                                        {matchState.playerReports.length} / 3 players voted
+                                                        {(matchState.playerReports || []).length} / {Math.max(2, Math.ceil((matchState.players || []).length / 2))} players voted
                                                     </p>
                                                 </div>
                                             </div>
@@ -537,7 +539,7 @@ const MatchInterface = () => {
                                             <div className="space-y-2 mt-6">
                                                 <p className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Votes Submitted:</p>
                                                 <div className="space-y-2">
-                                                    {matchState.playerReports.map((report, index) => (
+                                                    {(matchState.playerReports || []).map((report, index) => (
                                                         <div 
                                                             key={index}
                                                             className={`flex items-center justify-between p-2 rounded-lg ${themeMode === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}
@@ -559,7 +561,7 @@ const MatchInterface = () => {
                                             {/* ⭐ Análise de consenso */}
                                             {(() => {
                                                 const voteCounts = new Map<string, number>();
-                                                matchState.playerReports.forEach(r => {
+                                                (matchState.playerReports || []).forEach(r => {
                                                     const key = `${r.scoreA}-${r.scoreB}`;
                                                     voteCounts.set(key, (voteCounts.get(key) || 0) + 1);
                                                 });
@@ -612,11 +614,11 @@ const MatchInterface = () => {
                                             </div>
 
                                             {/* ⭐ Mostrar votos já existentes antes de submeter */}
-                                            {matchState.playerReports.length > 0 && (
+                                            {(matchState.playerReports || []).length > 0 && (
                                                 <div className="mt-4 p-3 bg-zinc-900/50 rounded-lg border border-white/5">
-                                                    <p className="text-xs text-zinc-500 mb-2">{matchState.playerReports.length} player{matchState.playerReports.length > 1 ? 's' : ''} already voted:</p>
+                                                    <p className="text-xs text-zinc-500 mb-2">{(matchState.playerReports || []).length} player{(matchState.playerReports || []).length > 1 ? 's' : ''} already voted:</p>
                                                     <div className="space-y-1">
-                                                        {matchState.playerReports.map((report, index) => (
+                                                        {(matchState.playerReports || []).map((report, index) => (
                                                             <div key={index} className="text-xs text-zinc-400">
                                                                 <span className="font-bold">{report.playerName}</span>: {report.scoreA} - {report.scoreB}
                                                             </div>
@@ -674,7 +676,7 @@ const MatchInterface = () => {
                                 <h3 className="text-sm font-bold uppercase tracking-widest">Commend & Report</h3>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {matchState.players.filter(p => p.id !== currentUser.id).map(player => (
+                                {(matchState.players || []).filter(p => p && p.id !== currentUser.id).map(player => (
                                     <div key={player.id} className={`flex items-center justify-between p-3 rounded-xl border ${themeMode === 'dark' ? 'bg-white/5 border-white/5' : 'bg-black/5 border-black/5'}`}>
                                         <div className="flex items-center space-x-3">
                                             <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden text-white">
@@ -685,16 +687,16 @@ const MatchInterface = () => {
                                         <div className="flex items-center space-x-2">
                                             <button 
                                                 onClick={() => handleCommend(player.id)}
-                                                disabled={matchInteractions.includes(player.id)}
-                                                className={`p-2 rounded-lg transition-colors ${matchInteractions.includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-500/20 text-emerald-500'}`}
+                                                disabled={(matchInteractions || []).includes(player.id)}
+                                                className={`p-2 rounded-lg transition-colors ${(matchInteractions || []).includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-500/20 text-emerald-500'}`}
                                                 title="Commend"
                                             >
                                                 <ThumbsUp className="w-4 h-4" />
                                             </button>
                                             <button 
                                                 onClick={() => openReportModal(player.id)}
-                                                disabled={matchInteractions.includes(player.id)}
-                                                className={`p-2 rounded-lg transition-colors ${matchInteractions.includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 text-red-500'}`}
+                                                disabled={(matchInteractions || []).includes(player.id)}
+                                                className={`p-2 rounded-lg transition-colors ${(matchInteractions || []).includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 text-red-500'}`}
                                                 title="Report"
                                             >
                                                 <Flag className="w-4 h-4" />

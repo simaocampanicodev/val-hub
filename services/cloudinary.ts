@@ -1,127 +1,96 @@
-// services/cloudinary.ts
+// services/cloudinary.ts – Integração com Cloudinary para foto de perfil
+// Cada upload usa um public_id único (uid_timestamp) para que a nova foto substitua
+// a anterior no uso e a URL guardada no Firestore seja sempre a última.
 import { auth } from './firebase';
 
-// ✅ Configuração do Cloudinary
 const CLOUDINARY_CLOUD_NAME = 'dlo35elbt';
 const CLOUDINARY_UPLOAD_PRESET = 'avatars_preset';
 
+const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
 /**
- * Faz upload de uma imagem para o Cloudinary
- * @param file - Arquivo de imagem a ser enviado
- * @returns URL pública da imagem
+ * Faz upload da imagem para o Cloudinary.
+ * Usa public_id único por upload (avatars/{uid}_{timestamp}) para que cada nova
+ * foto seja um recurso novo e a URL guardada no perfil seja sempre a correta.
+ * Assim, ao trocar de foto, a variável avatarUrl no Firestore é atualizada
+ * para a nova URL e o perfil mostra sempre a última foto.
  */
 export const uploadToCloudinary = async (file: File): Promise<string> => {
-  try {
-    console.log('📤 Fazendo upload para Cloudinary...');
-    
-    // Validações
-    if (!file.type.startsWith('image/')) {
-      throw new Error('Apenas imagens são permitidas');
-    }
-    
-    if (file.size > 5 * 1024 * 1024) {
-      throw new Error('Imagem muito grande! Máximo 5MB');
-    }
-    
-    // Preparar FormData
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    
-    // Adicionar ID único do usuário como nome do arquivo
-    // O Cloudinary automaticamente sobrescreve arquivos com o mesmo public_id
-    const user = auth.currentUser;
-    if (user) {
-      formData.append('public_id', `avatars/${user.uid}`);
-    }
-    
-    // Fazer upload
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: 'POST',
-        body: formData
-      }
-    );
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('❌ Erro do Cloudinary:', errorData);
-      throw new Error(errorData.error?.message || 'Erro ao fazer upload');
-    }
-    
-    const data = await response.json();
-    console.log('✅ Upload concluído! URL:', data.secure_url);
-    
-    // ✅ CORREÇÃO: Adicionar timestamp para forçar atualização do cache do navegador
-    // Quando o avatar é atualizado, o Cloudinary retorna a mesma URL, mas com cache
-    // Adicionar ?t=timestamp força o navegador a buscar a nova versão
-    const urlWithTimestamp = `${data.secure_url}?t=${Date.now()}`;
-    
-    // Retornar URL permanente e segura (HTTPS) com timestamp
-    return urlWithTimestamp;
-    
-  } catch (error: any) {
-    console.error('❌ Erro no upload para Cloudinary:', error);
-    throw new Error(error.message || 'Erro ao fazer upload da imagem');
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Utilizador não autenticado');
   }
+
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Apenas imagens são permitidas');
+  }
+
+  if (file.size > MAX_SIZE_BYTES) {
+    throw new Error('Imagem muito grande. Máximo 5MB');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  // URL única por upload: ao mudar de foto, guardamos sempre uma nova URL no perfil
+  formData.append('public_id', `avatars/${user.uid}_${Date.now()}`);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: 'POST', body: formData }
+  );
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    const msg = err?.error?.message || 'Erro ao fazer upload';
+    throw new Error(msg);
+  }
+
+  const data = await response.json();
+  const url = data.secure_url || data.url;
+  if (!url) {
+    throw new Error('Resposta do Cloudinary sem URL');
+  }
+
+  return url;
 };
 
 /**
- * Remove o avatar atual do usuário
- * @returns URL com timestamp para forçar reload
+ * Remove o avatar: faz upload de uma imagem 1x1 transparente com um public_id
+ * novo, para que o perfil possa guardar essa URL (ou o front pode passar a
+ * guardar null e não mostrar imagem).
  */
 export const removeAvatar = async (): Promise<void> => {
-  try {
-    console.log('🗑️ Removendo avatar...');
-    
-    const user = auth.currentUser;
-    if (!user) {
-      throw new Error('Usuário não autenticado');
-    }
-    
-    // O Cloudinary não permite deletar via unsigned upload
-    // Então vamos fazer upload de uma imagem transparente 1x1 pixel
-    // Isso efetivamente "remove" o avatar visualmente
-    
-    // Criar imagem transparente 1x1 pixel
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.clearRect(0, 0, 1, 1);
-    }
-    
-    // Converter canvas para blob
-    const blob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-      }, 'image/png');
-    });
-    
-    // Fazer upload da imagem transparente
-    const formData = new FormData();
-    formData.append('file', blob, 'transparent.png');
-    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    formData.append('public_id', `avatars/${user.uid}`);
-    
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: 'POST',
-        body: formData
-      }
-    );
-    
-    if (!response.ok) {
-      throw new Error('Erro ao remover avatar');
-    }
-    
-    console.log('✅ Avatar removido com sucesso!');
-    
-  } catch (error: any) {
-    console.error('❌ Erro ao remover avatar:', error);
-    throw new Error(error.message || 'Erro ao remover avatar');
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Utilizador não autenticado');
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  const ctx = canvas.getContext('2d');
+  if (ctx) ctx.clearRect(0, 0, 1, 1);
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, 'image/png');
+  });
+
+  if (!blob) {
+    throw new Error('Erro ao criar imagem');
+  }
+
+  const formData = new FormData();
+  formData.append('file', blob, 'transparent.png');
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('public_id', `avatars/${user.uid}_${Date.now()}`);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: 'POST', body: formData }
+  );
+
+  if (!response.ok) {
+    throw new Error('Erro ao remover avatar');
   }
 };

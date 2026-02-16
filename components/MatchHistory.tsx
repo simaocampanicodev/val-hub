@@ -11,28 +11,34 @@ const MatchHistory = () => {
 
   const filteredHistory = matchHistory.filter(match => {
     if (filter === 'all') return true;
-    return match.teamAIds.includes(currentUser.id) || match.teamBIds.includes(currentUser.id);
+    const a = match.teamAIds || [];
+    const b = match.teamBIds || [];
+    return a.includes(currentUser.id) || b.includes(currentUser.id);
   });
 
   const getResultColor = (match: MatchRecord) => {
-    if (!match.teamAIds.includes(currentUser.id) && !match.teamBIds.includes(currentUser.id)) return 'border-zinc-500/20'; 
-
-    const myTeam = match.teamAIds.includes(currentUser.id) ? 'A' : 'B';
+    const a = match.teamAIds || [];
+    const b = match.teamBIds || [];
+    if (!a.includes(currentUser.id) && !b.includes(currentUser.id)) return 'border-zinc-500/20'; 
+    const myTeam = a.includes(currentUser.id) ? 'A' : 'B';
     const won = myTeam === match.winner;
     return won ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-rose-500/50 bg-rose-500/5';
   };
 
   const getResultText = (match: MatchRecord) => {
-      if (!match.teamAIds.includes(currentUser.id) && !match.teamBIds.includes(currentUser.id)) return 'SPECTATED';
-      const myTeam = match.teamAIds.includes(currentUser.id) ? 'A' : 'B';
+      const a = match.teamAIds || [];
+      const b = match.teamBIds || [];
+      if (!a.includes(currentUser.id) && !b.includes(currentUser.id)) return 'SPECTATED';
+      const myTeam = a.includes(currentUser.id) ? 'A' : 'B';
       return myTeam === match.winner ? 'VICTORY' : 'DEFEAT';
   };
 
   const getBadgeStyle = (match: MatchRecord) => {
-      if (!match.teamAIds.includes(currentUser.id) && !match.teamBIds.includes(currentUser.id)) 
+      const a = match.teamAIds || [];
+      const b = match.teamBIds || [];
+      if (!a.includes(currentUser.id) && !b.includes(currentUser.id)) 
         return 'bg-zinc-500/20 text-zinc-500 border-zinc-500/30';
-      
-      const myTeam = match.teamAIds.includes(currentUser.id) ? 'A' : 'B';
+      const myTeam = a.includes(currentUser.id) ? 'A' : 'B';
       const won = myTeam === match.winner;
 
       if (won) return 'bg-emerald-500 text-white border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]';
