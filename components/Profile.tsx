@@ -4,7 +4,7 @@ import { AGENTS, ROLES, AGENT_IMAGES, AGENT_BANNERS, MAP_IMAGES, MAPS } from '..
 import { getRankInfo, getLevelProgress } from '../services/gameService';
 import Card from './ui/Card';
 import Button from './ui/Button';
-import { Camera, Edit2, Save, X, User as UserIcon, Award, Flame, Star, Shield, Crown, ThumbsUp, TrendingUp, Map as MapIcon, Activity, Users, Link as LinkIcon, Loader2, CheckCircle, AlertTriangle, Trash2 } from 'lucide-react';
+import { Camera, Edit2, Save, X, User as UserIcon, Award, Flame, Star, Shield, Crown, ThumbsUp, TrendingUp, Map as MapIcon, Activity, Users, Link as LinkIcon, Loader2, CheckCircle, AlertTriangle, Trash2, UserPlus } from 'lucide-react';
 import { GameRole } from '../types';
 import { uploadToCloudinary, removeAvatar } from '../services/cloudinary';
 
@@ -19,7 +19,7 @@ interface BadgeType {
 }
 
 const Profile = () => {
-  const { currentUser, updateProfile, themeMode, allUsers, viewProfileId, isAdmin, resetSeason, matchHistory, linkRiotAccount } = useGame();
+  const { currentUser, updateProfile, themeMode, allUsers, viewProfileId, isAdmin, resetSeason, matchHistory, linkRiotAccount, sendFriendRequest, acceptFriendRequest, rejectFriendRequest } = useGame();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Determine which user to show
@@ -471,6 +471,36 @@ const Profile = () => {
                     <span className="text-zinc-500">•</span>
                     <span>{profileUser.secondaryRole}</span>
                 </div>
+
+                {/* Add Friend / Friend status (when viewing someone else's profile) */}
+                {!isOwnProfile && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {currentUser.friends?.includes(profileUser.id) ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium">
+                                <CheckCircle className="w-4 h-4" />
+                                Friends
+                            </span>
+                        ) : currentUser.friendRequests?.some(r => r.fromId === profileUser.id) ? (
+                            <div className="flex items-center gap-2">
+                                <Button size="sm" onClick={() => acceptFriendRequest(profileUser.id)} className="bg-emerald-600 hover:bg-emerald-500">
+                                    Accept Request
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => rejectFriendRequest(profileUser.id)} className="text-zinc-400 hover:text-white">
+                                    Reject
+                                </Button>
+                            </div>
+                        ) : profileUser.friendRequests?.some(r => r.fromId === currentUser.id) ? (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-700/50 border border-white/10 text-zinc-400 text-sm">
+                                Request sent
+                            </span>
+                        ) : (
+                            <Button size="sm" onClick={() => sendFriendRequest(profileUser.id)} className="inline-flex items-center gap-2">
+                                <UserPlus className="w-4 h-4" />
+                                Add Friend
+                            </Button>
+                        )}
+                    </div>
+                )}
                 
                 {/* XP Bar (Mobile Fixed) */}
                 <div className="mt-4 w-full md:max-w-xs flex flex-col">
