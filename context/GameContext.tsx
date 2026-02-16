@@ -75,7 +75,7 @@ const initialUser: User = {
   reputation: 10, wins: 0, losses: 0, winstreak: 0,
   primaryRole: GameRole.DUELIST, secondaryRole: GameRole.FLEX,
   topAgents: ['Jett', 'Reyna', 'Raze'], isBot: false,
-  activeQuests: [], friends: [], friendRequests: []
+  activeQuests: [], friends: [], friendRequests: [], friendQuestCountedIds: []
 };
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -111,7 +111,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           winstreak: d.winstreak || 0, primaryRole: d.primary_role as GameRole,
           secondaryRole: d.secondary_role as GameRole, topAgents: d.top_agents || [],
           isBot: false, activeQuests: d.active_quests || [], friends: d.friends || [],
-          friendRequests: d.friend_requests || [], avatarUrl: d.avatarUrl,
+          friendRequests: d.friend_requests || [], friendQuestCountedIds: d.friend_quest_counted_ids || [], avatarUrl: d.avatarUrl,
           riotId: d.riotId, riotTag: d.riotTag, lastPointsChange: d.lastPointsChange
         };
       });
@@ -229,6 +229,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ...prev,
           friends: data.friends || [],
           friendRequests: data.friend_requests || [],
+          friendQuestCountedIds: data.friend_quest_counted_ids || [],
           avatarUrl: data.avatarUrl,
           username: data.username,
           points: data.points,
@@ -1229,24 +1230,52 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const acceptFriendRequest = async (fromId: string) => {
     try {
       console.log('✅ Aceitando friend request de:', fromId);
-      
+
       const fromUser = allUsers.find(u => u.id === fromId);
       if (!fromUser) {
         console.log('❌ Usuário não encontrado');
         return;
       }
-      
+
+      const countedAccepter = currentUser.friendQuestCountedIds || [];
+      const countedSender = fromUser.friendQuestCountedIds || [];
+      const countForAccepter = !countedAccepter.includes(fromId);
+      const countForSender = !countedSender.includes(currentUser.id);
+
       await updateDoc(doc(db, COLLECTIONS.USERS, currentUser.id), {
         friends: [...currentUser.friends, fromId],
         friend_requests: currentUser.friendRequests.filter(r => r.fromId !== fromId)
       });
-      
-      await updateDoc(doc(db, COLLECTIONS.USERS, fromId), {
-        friends: [...fromUser.friends, currentUser.id]
-      });
 
-      processQuestProgress('ADD_FRIEND', 1);
-      
+      if (countForAccepter) {
+        const updatedQuests = (currentUser.activeQuests || []).map(uq => {
+          const questDef = QUEST_POOL.find(q => q.id === uq.questId);
+          if (!questDef || questDef.type !== 'ADD_FRIEND' || uq.completed) return uq;
+          const newProgress = Math.min(uq.progress + 1, questDef.target);
+          return { ...uq, progress: newProgress, completed: newProgress >= questDef.target };
+        });
+        await updateUserInDb(currentUser.id, {
+          activeQuests: updatedQuests,
+          friendQuestCountedIds: [...countedAccepter, fromId]
+        });
+      }
+
+      const senderUpdates: Record<string, unknown> = {
+        friends: [...fromUser.friends, currentUser.id]
+      };
+      if (countForSender) {
+        const updatedQuestsSender = (fromUser.activeQuests || []).map(uq => {
+          const questDef = QUEST_POOL.find(q => q.id === uq.questId);
+          if (!questDef || questDef.type !== 'ADD_FRIEND' || uq.completed) return uq;
+          const newProgress = Math.min(uq.progress + 1, questDef.target);
+          return { ...uq, progress: newProgress, completed: newProgress >= questDef.target };
+        });
+        senderUpdates.active_quests = updatedQuestsSender;
+        senderUpdates.friend_quest_counted_ids = [...countedSender, currentUser.id];
+      }
+
+      await updateDoc(doc(db, COLLECTIONS.USERS, fromId), senderUpdates);
+
       console.log('✅ Friend request aceito!');
       alert('Friend request accepted!');
     } catch (error) {

@@ -72,7 +72,9 @@ export interface User {
   friendRequests: FriendRequest[];
 
   // Quests
-  activeQuests: UserQuest[]; 
+  activeQuests: UserQuest[];
+  /** User IDs already counted for ADD_FRIEND quest (so re-adding same person does not count again) */
+  friendQuestCountedIds?: string[];
   lastDailyQuestGeneration?: number;
   lastMonthlyQuestGeneration?: number;
 }

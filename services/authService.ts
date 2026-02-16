@@ -85,6 +85,7 @@ export const registerUser = async (data: RegisterData): Promise<{ success: boole
       active_quests: [],
       friends: [],
       friend_requests: [],
+      friend_quest_counted_ids: [],
       created_at: serverTimestamp()
     };
 
@@ -123,7 +124,8 @@ export const registerUser = async (data: RegisterData): Promise<{ success: boole
       isBot: false,
       activeQuests: userData.active_quests || [],
       friends: userData.friends || [],
-      friendRequests: userData.friend_requests || []
+      friendRequests: userData.friend_requests || [],
+      friendQuestCountedIds: userData.friend_quest_counted_ids || []
     };
 
     console.log('✅ Usuário criado com sucesso:', user.username);
@@ -177,7 +179,8 @@ export const loginUser = async (email: string, password: string): Promise<{ succ
       isBot: false,
       activeQuests: userData.active_quests || [],
       friends: userData.friends || [],
-      friendRequests: userData.friend_requests || []
+      friendRequests: userData.friend_requests || [],
+      friendQuestCountedIds: userData.friend_quest_counted_ids || []
     };
 
     return { success: true, user };
@@ -210,7 +213,8 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>):
     if (updates.friendRequests !== undefined) dbUpdates.friend_requests = updates.friendRequests;
     if (updates.riotId !== undefined) dbUpdates.riotId = updates.riotId;
     if (updates.riotTag !== undefined) dbUpdates.riotTag = updates.riotTag;
-    
+    if (updates.friendQuestCountedIds !== undefined) dbUpdates.friend_quest_counted_ids = updates.friendQuestCountedIds;
+
     // ✅ CORREÇÃO: Permitir remover avatarUrl
     if ('avatarUrl' in updates) {
       // Se avatarUrl é null ou undefined, remover o campo
@@ -263,7 +267,8 @@ export const getAllUsers = async (): Promise<User[]> => {
         isBot: false,
         activeQuests: u.active_quests || [],
         friends: u.friends || [],
-        friendRequests: u.friend_requests || []
+        friendRequests: u.friend_requests || [],
+        friendQuestCountedIds: u.friend_quest_counted_ids || []
       };
     });
   } catch (error) {
@@ -299,7 +304,8 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       isBot: false,
       activeQuests: u.active_quests || [],
       friends: u.friends || [],
-      friendRequests: u.friend_requests || []
+      friendRequests: u.friend_requests || [],
+      friendQuestCountedIds: u.friend_quest_counted_ids || []
     };
   } catch (error) {
     console.error('❌ Erro ao buscar usuário:', error);
