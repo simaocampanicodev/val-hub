@@ -810,12 +810,27 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       reportA: scoreResult,
       reportB: scoreResult
     } : null);
+
+    // Atualizar feedback local do utilizador actual (imediato) para mostrar +/− MMR
+    const myChange = pointsChanges.find(p => p.playerId === currentUser.id);
+    if (myChange) {
+      setCurrentUser(prev => ({ ...prev, lastPointsChange: myChange.pointsChange, points: myChange.newTotal }));
+    }
+
     console.log('✅ Estado local atualizado - match ended screen deve aparecer');
-    
-    // ⭐ Deletar match após 60 segundos (não 10s)
-    setTimeout(() => {
-      console.log('🗑️ Deletando match do Firestore após 60 segundos');
-      deleteDoc(doc(db, COLLECTIONS.ACTIVE_MATCHES, matchState.id));
+
+    // ⭐ Deleção do documento deve ser feita pelo backend; só admin pode apagar client-side
+    setTimeout(async () => {
+      try {
+        if (isAdmin) {
+          console.log('🗑️ Admin - deletando match do Firestore após 60 segundos');
+          await deleteDoc(doc(db, COLLECTIONS.ACTIVE_MATCHES, matchState.id));
+        } else {
+          console.log('ℹ️ Não é admin — a limpeza do doc ficará a cargo do backend');
+        }
+      } catch (err) {
+        console.warn('⚠️ Falha ao deletar match (ignorado):', err);
+      }
     }, 60000);
   };
 
