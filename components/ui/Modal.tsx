@@ -42,7 +42,7 @@ const Modal: React.FC<ModalProps> = ({
 
   const modalContent = (
     <div 
-      className="fixed inset-0 z-[9999] grid place-items-center bg-black/80 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[9999] flex items-center justify-center min-h-screen min-w-full bg-black/80 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div 

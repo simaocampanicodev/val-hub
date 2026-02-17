@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useGame } from '../context/GameContext';
 import { AGENTS, ROLES, AGENT_IMAGES, AGENT_BANNERS, MAP_IMAGES, MAPS } from '../constants';
 import { getRankInfo, getLevelProgress } from '../services/gameService';
@@ -373,9 +374,9 @@ const Profile = () => {
 
   return (
     <>
-      {/* Badge Modal — fora da div animada para que fixed funcione corretamente */}
-      {activeBadge && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setActiveBadge(null)}>
+      {/* Badge Modal (conquistas) — renderizado em document.body para ficar sempre no centro da tela */}
+      {activeBadge && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center min-h-screen min-w-full bg-black/80 backdrop-blur-sm p-4" onClick={() => setActiveBadge(null)}>
               <div className="max-w-sm w-full animate-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
                   <Card className="text-center relative overflow-hidden">
                       {/* Background Glow in Modal */}
@@ -404,7 +405,8 @@ const Profile = () => {
                       )}
                   </Card>
               </div>
-          </div>
+          </div>,
+          document.body
       )}
 
       {/* Modals fora da div animada */}
