@@ -13,19 +13,30 @@ service cloud.firestore {
     }
 
     // --- USERS ---
-    // Nota: A atualização de points, wins, losses, winstreak é feita pela Cloud Function
-    // applyMatchResults (trigger on active_matches). O cliente NÃO pode alterar estes campos.
+    // Sem Cloud Functions: o jogador pode atualizar os próprios points/wins/losses quando uma partida termina
+    // (apenas alterações plausíveis: +0 ou +1 em wins e em losses por escrita).
     match /users/{userId} {
       allow read: if true;
       allow create: if request.auth != null && request.auth.uid == userId;
 
-      // Only the user itself can update a small set of fields (NO client-side points/wins changes)
+      // Perfil: avatar, username, etc. (sem points/wins/losses)
       allow update: if request.auth != null && request.auth.uid == userId
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'avatarUrl', 'bannerUrl', 'username', 'riotId', 'riotTag',
           'active_quests', 'lastDailyQuestGeneration', 'lastMonthlyQuestGeneration',
           'friend_requests', 'friends', 'lastSeenAt'
         ]);
+
+      // Atualização dos próprios pontos após fim de partida (sem Cloud Functions):
+      // só pode alterar points, lastPointsChange, wins, losses, winstreak; wins/losses no máximo +1 por escrita
+      allow update: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'points', 'lastPointsChange', 'wins', 'losses', 'winstreak'
+        ])
+        && request.resource.data.wins >= resource.data.get('wins', 0)
+        && request.resource.data.wins <= resource.data.get('wins', 0) + 1
+        && request.resource.data.losses >= resource.data.get('losses', 0)
+        && request.resource.data.losses <= resource.data.get('losses', 0) + 1;
 
       // Allow updating friend lists / friend_requests by any authenticated user (keeps original behaviour)
       allow update: if request.auth != null

@@ -108,6 +108,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const allUsersRef = useRef<User[]>([]);
   const currentMatchIdRef = useRef<string | null>(null);
   const matchesBeingCreatedRef = useRef<Set<string>>(new Set()); // ⭐ Rastrear matches em processamento
+  const lastAppliedPointsMatchIdRef = useRef<string | null>(null); // ⭐ Evitar aplicar pontos duas vezes à mesma partida
   const isAdmin = currentUser.username === 'txger.';
   const hasDashboardAccess = currentUser.username === 'txger.' || currentUser.role === 'owner' || currentUser.role === 'mod' || currentUser.role === 'dev' || currentUser.role === 'helper';
   const onlineUserIds = React.useMemo(() => {
@@ -219,6 +220,38 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       })
       .catch((err) => console.warn('Fallback playerPointsChanges from matches:', err));
   }, [matchState?.id, matchState?.phase, matchState?.resultReported, matchState?.playerPointsChanges?.length]);
+
+  // 🔥 APLICAR OS PRÓPRIOS PONTOS NO FIRESTORE (sem Cloud Functions): quando a partida está FINISHED, cada jogador atualiza o seu documento
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser.id || currentUser.id === 'user-1') return;
+    if (!matchState || matchState.phase !== MatchPhase.FINISHED || !matchState.playerPointsChanges?.length) return;
+
+    const myChange = matchState.playerPointsChanges.find((p: { playerId: string }) => p.playerId === currentUser.id);
+    if (!myChange) return;
+    if (lastAppliedPointsMatchIdRef.current === matchState.id) return;
+    if (currentUser.points === myChange.newTotal && currentUser.lastPointsChange === myChange.pointsChange) {
+      lastAppliedPointsMatchIdRef.current = matchState.id;
+      return;
+    }
+
+    const newWins = (currentUser.wins || 0) + (myChange.isWinner ? 1 : 0);
+    const newLosses = (currentUser.losses || 0) + (myChange.isWinner ? 0 : 1);
+    const newWinstreak = myChange.isWinner ? (currentUser.winstreak || 0) + 1 : 0;
+
+    const userRef = doc(db, COLLECTIONS.USERS, currentUser.id);
+    updateDoc(userRef, {
+      points: myChange.newTotal,
+      lastPointsChange: myChange.pointsChange,
+      wins: newWins,
+      losses: newLosses,
+      winstreak: newWinstreak
+    })
+      .then(() => {
+        lastAppliedPointsMatchIdRef.current = matchState.id;
+        console.log('✅ Pontos aplicados ao próprio perfil (Firestore)');
+      })
+      .catch((err) => console.warn('⚠️ Falha ao aplicar pontos no Firestore:', err));
+  }, [isAuthenticated, currentUser.id, currentUser.points, currentUser.lastPointsChange, currentUser.wins, currentUser.losses, currentUser.winstreak, matchState?.id, matchState?.phase, matchState?.playerPointsChanges]);
 
   // 🔥 LISTENER: Active Match
   useEffect(() => {
@@ -820,7 +853,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       reportB: scoreResult
     });
     console.log('✅ Match finalizada e enviando para todos os jogadores');
-    
+    // Pontos: cada jogador aplica os próprios no Firestore via useEffect (sem Cloud Functions)
+
     // ⭐ Atualizar estado local imediatamente para refletir mudanças de pontos
     console.log('🔄 Atualizando estado local do matchState para FINISHED...');
     setMatchState(prev => prev ? {
