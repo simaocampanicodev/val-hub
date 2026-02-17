@@ -473,7 +473,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           timestamp: Date.now(),
           isSystem: true
         }],
-        playerReports: [], // ⭐ NOVO: Array para múltiplos reports
+        playerReports: [], // ⭐ Array para múltiplos reports
+        playerPointsChanges: [], // ⭐ Array para mudanças de pontos individuais
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         resultReported: false
@@ -685,11 +686,14 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await setDoc(doc(db, COLLECTIONS.MATCHES, matchState.id), { ...recordWithPoints, match_date: serverTimestamp() });
     
     // ⭐ Armazenar mudanças de pontos no estado da match para o UI exibir
+    const scoreResult = { scoreA: finalScore.scoreA, scoreB: finalScore.scoreB };
     await updateMatch({ 
       phase: MatchPhase.FINISHED, 
       winner, 
       resultReported: true,
-      playerPointsChanges: pointsChanges
+      playerPointsChanges: pointsChanges,
+      reportA: scoreResult,
+      reportB: scoreResult
     });
     
     setTimeout(() => {

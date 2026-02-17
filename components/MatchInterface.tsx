@@ -70,7 +70,7 @@ const MatchInterface = () => {
   };
 
   const minutesPassed = Math.floor(timeLeft / 60000);
-  const canReport = minutesPassed >= 20;
+  const canReport = minutesPassed >= 1; // ⭐ Para testes: 1 minuto em vez de 20
 
   // Determine Result Title & Color
   const teamA = matchState.teamA || [];
@@ -499,7 +499,7 @@ const MatchInterface = () => {
                             
                             {!canReport ? (
                                 <div className="flex flex-col items-center space-y-2">
-                                    <div className="text-zinc-500 text-sm">Results can be reported in {Math.max(0, 20 - minutesPassed)} minutes.</div>
+                                    <div className="text-zinc-500 text-sm">Results can be reported in {Math.max(0, 1 - minutesPassed)} minute{Math.max(0, 1 - minutesPassed) === 1 ? '' : 's'}.</div>
                                     {isAdmin && (
                                         <Button variant="ghost" size="sm" onClick={forceTimePass}>
                                             [Admin] Skip Time
@@ -529,7 +529,7 @@ const MatchInterface = () => {
                                                         Waiting for other players to report...
                                                     </p>
                                                     <p className="text-xs text-rose-500 font-bold mt-2">
-                                                        {(matchState.playerReports || []).length} / {Math.max(2, Math.ceil((matchState.players || []).length / 2))} players voted
+                                                        {(matchState.playerReports || []).length} / 3 players voted
                                                     </p>
                                                 </div>
                                             </div>
