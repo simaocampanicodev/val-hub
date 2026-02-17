@@ -462,7 +462,7 @@ const MatchInterface = () => {
                             <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
                                 {/* Left Team */}
                                 <div className="text-center lg:text-left w-full lg:w-1/3 space-y-1">
-                                    <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-400">Your Team</p>
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-400">Team</p>
                                     <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
                                         {matchState.captainA?.username || 'Team A'}
                                     </h2>
@@ -490,7 +490,7 @@ const MatchInterface = () => {
 
                                 {/* Right Team */}
                                 <div className="text-center lg:text-right w-full lg:w-1/3 space-y-1">
-                                    <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-400">Enemies</p>
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-400">Team</p>
                                     <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
                                         {matchState.captainB?.username || 'Team B'}
                                     </h2>
