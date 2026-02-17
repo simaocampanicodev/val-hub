@@ -202,6 +202,24 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return () => unsubscribe();
   }, []);
 
+  // 🔥 FALLBACK: Se a match está FINISHED mas playerPointsChanges veio vazio (ex.: outros jogadores), buscar em matches/
+  useEffect(() => {
+    if (!matchState || matchState.phase !== MatchPhase.FINISHED || !matchState.resultReported) return;
+    const hasPoints = matchState.playerPointsChanges && matchState.playerPointsChanges.length > 0;
+    if (hasPoints) return;
+    const matchId = matchState.id;
+    getDoc(doc(db, COLLECTIONS.MATCHES, matchId))
+      .then((snap) => {
+        if (!snap.exists()) return;
+        const d = snap.data();
+        const fromHistory = d?.playerPointsChanges;
+        if (!Array.isArray(fromHistory) || fromHistory.length === 0) return;
+        setMatchState((prev) => (prev && prev.id === matchId ? { ...prev, playerPointsChanges: fromHistory } : prev));
+        console.log('💰 playerPointsChanges carregados do histórico (matches/) para ecrã Match Ended');
+      })
+      .catch((err) => console.warn('Fallback playerPointsChanges from matches:', err));
+  }, [matchState?.id, matchState?.phase, matchState?.resultReported, matchState?.playerPointsChanges?.length]);
+
   // 🔥 LISTENER: Active Match
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -220,10 +238,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (userMatch) {
         console.log(`🏟️ Match ativa encontrada: ${userMatch.id} - Phase: ${userMatch.phase}`);
         console.log(`  📊 Reports: ${(userMatch.playerReports || []).length}`);
-        console.log(`  💰 Points Changes: ${(userMatch.playerPointsChanges || []).length}`);
+        // Garantir que playerPointsChanges venha do documento (pode vir como array ou undefined)
+        const pointsFromDoc = userMatch.playerPointsChanges;
+        const playerPointsChanges = Array.isArray(pointsFromDoc) ? pointsFromDoc : [];
+        console.log(`  💰 Points Changes: ${playerPointsChanges.length}`);
         currentMatchIdRef.current = userMatch.id;
         const playersData = userMatch.playersData || {};
-        const players = userMatch.players.map((id: string) => 
+        const players = userMatch.players.map((id: string) =>
           allUsersRef.current.find(u => u.id === id) || { ...initialUser, id, username: playersData[id]?.username || 'Unknown' }
         );
         const getUser = (id: string) => allUsersRef.current.find(u => u.id === id) || null;
@@ -245,8 +266,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           winner: userMatch.winner || null,
           reportA: userMatch.reportA || null,
           reportB: userMatch.reportB || null,
-          playerReports: userMatch.playerReports || [], // ⭐ Carregar reports dos jogadores
-          playerPointsChanges: userMatch.playerPointsChanges || [], // ⭐ NOVO: Carregar mudanças de pontos
+          playerReports: userMatch.playerReports || [],
+          playerPointsChanges,
           readyPlayers: userMatch.readyPlayers || [],
           readyExpiresAt: userMatch.readyExpiresAt ? (userMatch.readyExpiresAt as any).toMillis() : Date.now() + 60000,
           chat: userMatch.chat || []
@@ -339,6 +360,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const records: MatchRecord[] = snapshot.docs.map(docSnap => {
         const d = docSnap.data();
+        const playerPointsChanges = Array.isArray(d.playerPointsChanges) ? d.playerPointsChanges : undefined;
         return {
           id: docSnap.id,
           date: d.date ?? (d.match_date?.toMillis?.() ?? Date.now()),
@@ -350,7 +372,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           teamBIds: Array.isArray(d.teamBIds) ? d.teamBIds : (d.team_b_ids || []),
           teamASnapshot: Array.isArray(d.teamASnapshot) ? d.teamASnapshot : (d.team_a_snapshot || []),
           teamBSnapshot: Array.isArray(d.teamBSnapshot) ? d.teamBSnapshot : (d.team_b_snapshot || []),
-          score: d.score ?? '0-0'
+          score: d.score ?? '0-0',
+          playerPointsChanges
         };
       });
       setMatchHistory(records);
