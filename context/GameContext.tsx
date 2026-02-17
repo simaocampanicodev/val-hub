@@ -178,9 +178,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       setQueue(queueUsers);
       
-      // ⭐ TRIGGER: 10 jogadores → criar match
-      if (queueUsers.length >= 10 && !currentMatchIdRef.current) {
-        console.log('⚡⚡⚡ 10 JOGADORES! Criando match...');
+      // ⭐ TRIGGER: 10+ jogadores → criar match (permite múltiplas matches simultâneas)
+      if (queueUsers.length >= 10) {
+        console.log('⚡⚡⚡ 10+ JOGADORES! Criando match...');
         createMatch(queueUsers.slice(0, 10));
       }
     }, (error) => {
@@ -228,7 +228,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           winner: userMatch.winner || null,
           reportA: userMatch.reportA || null,
           reportB: userMatch.reportB || null,
-          playerReports: userMatch.playerReports || [], // ⭐ NOVO: Carregar reports dos jogadores
+          playerReports: userMatch.playerReports || [], // ⭐ Carregar reports dos jogadores
+          playerPointsChanges: userMatch.playerPointsChanges || [], // ⭐ NOVO: Carregar mudanças de pontos
           readyPlayers: userMatch.readyPlayers || [],
           readyExpiresAt: userMatch.readyExpiresAt ? (userMatch.readyExpiresAt as any).toMillis() : Date.now() + 60000,
           chat: userMatch.chat || []
@@ -619,11 +620,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         role: u.primaryRole
       })),
       score: `${finalScore.scoreA}-${finalScore.scoreB}`
+      // playerPointsChanges serão adicionados após cálculo
     };
     
-    await setDoc(doc(db, COLLECTIONS.MATCHES, matchState.id), { ...record, match_date: serverTimestamp() });
-    
-    // ✅ Atualizar pontos PRIMEIRO (inclui test matches); depois passar match a FINISHED para o ecrã mostrar lastPointsChange
+    // ✅ Calcular e armazenar mudanças de pontos individuais
+    const pointsChanges: any[] = [];
     const updates: Promise<any>[] = [];
     
     for (const w of validWinningTeam) {
@@ -633,9 +634,19 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         continue;
       }
       const newPoints = calculatePoints(u.points, true, u.winstreak + 1);
+      const pointsChange = newPoints - u.points;
+      
+      pointsChanges.push({
+        playerId: u.id,
+        playerName: u.username,
+        pointsChange,
+        newTotal: newPoints,
+        isWinner: true
+      });
+      
       updates.push(updateDoc(doc(db, COLLECTIONS.USERS, u.id), {
         points: newPoints,
-        lastPointsChange: newPoints - u.points,
+        lastPointsChange: pointsChange,
         wins: u.wins + 1,
         winstreak: u.winstreak + 1
       }));
@@ -648,9 +659,19 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         continue;
       }
       const newPoints = calculatePoints(u.points, false, 0);
+      const pointsChange = newPoints - u.points;
+      
+      pointsChanges.push({
+        playerId: u.id,
+        playerName: u.username,
+        pointsChange,
+        newTotal: newPoints,
+        isWinner: false
+      });
+      
       updates.push(updateDoc(doc(db, COLLECTIONS.USERS, u.id), {
         points: newPoints,
-        lastPointsChange: newPoints - u.points,
+        lastPointsChange: pointsChange,
         losses: u.losses + 1,
         winstreak: 0
       }));
@@ -658,8 +679,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     await Promise.all(updates);
     
-    // Só depois de pontos gravados: marcar match como FINISHED para o UI mostrar "Match Ended" com lastPointsChange já no perfil
-    await updateMatch({ phase: MatchPhase.FINISHED, winner, resultReported: true });
+    // ⭐ Adicionar pontos ao record antes de salvar
+    const recordWithPoints: MatchRecord = { ...record, playerPointsChanges: pointsChanges };
+    
+    await setDoc(doc(db, COLLECTIONS.MATCHES, matchState.id), { ...recordWithPoints, match_date: serverTimestamp() });
+    
+    // ⭐ Armazenar mudanças de pontos no estado da match para o UI exibir
+    await updateMatch({ 
+      phase: MatchPhase.FINISHED, 
+      winner, 
+      resultReported: true,
+      playerPointsChanges: pointsChanges
+    });
     
     setTimeout(() => {
       deleteDoc(doc(db, COLLECTIONS.ACTIVE_MATCHES, matchState.id));
@@ -904,9 +935,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
 
-    // ⭐ VERIFICAR SE TEM PELO MENOS 2 JOGADORES NA QUEUE
-    if (queue.length < 2) {
-      showToast('You need at least 2 players in the queue (you + 1 or more).', 'warning');
+    // ⭐ VERIFICAR SE TEM PELO MENOS 3 JOGADORES NA QUEUE (mínimo)
+    if (queue.length < 3) {
+      showToast('You need at least 3 players in the queue to create a test match.', 'warning');
       return;
     }
 
@@ -962,12 +993,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         reportA: null,
         reportB: null,
         playerReports: [], // ⭐ Array vazio para reports
+        playerPointsChanges: [], // ⭐ Array vazio para mudanças de pontos
         readyPlayers: allPlayers.map(p => p.id), // Todos já "ready"
         chat: [{
           id: 'sys-test',
           senderId: 'system',
           senderName: 'System',
-          text: '🧪 Test match created by admin. Match started immediately.',
+          text: '🧪 Test match created by admin. Match started immediately. 3 equal reports required to finalize.',
           timestamp: Date.now(),
           isSystem: true
         }],
@@ -994,7 +1026,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       console.log('========================================');
 
-      showToast('Test match created! You are in the LIVE phase.', 'success');
+      showToast(`Test match created with ${queuePlayers.length} players! Waiting for 3 equal result submissions.`, 'success');
 
     } catch (error: any) {
       console.error('❌ Erro ao criar test match:', error);
@@ -1164,14 +1196,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log(`  ${key}: ${data.count} votos (${data.voters.join(', ')})`);
     });
     
-    // ⭐ Consenso: maioria dos jogadores na partida (mín. 2). Test match com 3 pessoas = 2 votos iguais bastam.
-    const totalPlayers = (matchState.players || []).length;
-    const requiredVotes = Math.max(2, Math.ceil(totalPlayers / 2));
+    // ⭐ NOVO SISTEMA: Exatamente 3 votos iguais para consenso (funciona com qualquer número de players)
+    const REQUIRED_VOTES = 3;
     let consensusResult = null;
     for (const [key, data] of resultCounts.entries()) {
-      if (data.count >= requiredVotes) {
+      if (data.count >= REQUIRED_VOTES) {
         consensusResult = data;
-        console.log(`✅ CONSENSO ALCANÇADO! Resultado ${key} tem ${data.count} votos (necessário ${requiredVotes})`);
+        console.log(`✅ CONSENSO ALCANÇADO! Resultado ${key} tem ${data.count} votos (necessário ${REQUIRED_VOTES})`);
         break;
       }
     }

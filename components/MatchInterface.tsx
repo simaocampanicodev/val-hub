@@ -668,6 +668,59 @@ const MatchInterface = () => {
                             </div>
                         </div>
 
+                        {/* ⭐ NOVO: Points Table - Mostrar mudanças de pontos individuais */}
+                        {matchState.playerPointsChanges && matchState.playerPointsChanges.length > 0 && (
+                            <Card className="w-full max-w-3xl">
+                                <div className="flex items-center space-x-2 mb-6 text-zinc-400">
+                                    <Trophy className="w-5 h-5" />
+                                    <h3 className="text-sm font-bold uppercase tracking-widest">Points Breakdown</h3>
+                                </div>
+                                <div className="space-y-2">
+                                    {matchState.playerPointsChanges
+                                        .sort((a, b) => Math.abs(b.pointsChange) - Math.abs(a.pointsChange))
+                                        .map((change) => {
+                                        const playerData = matchState.players.find(p => p.id === change.playerId);
+                                        return (
+                                            <div 
+                                                key={change.playerId} 
+                                                className={`flex items-center justify-between p-3 rounded-xl border ${
+                                                    change.isWinner 
+                                                        ? 'bg-emerald-500/10 border-emerald-500/20' 
+                                                        : 'bg-rose-500/10 border-rose-500/20'
+                                                }`}
+                                            >
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden text-white text-xs font-bold">
+                                                        {playerData?.avatarUrl ? (
+                                                            <img src={playerData.avatarUrl} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            change.playerName[0].toUpperCase()
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className={`font-bold text-sm ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
+                                                            {change.playerName}
+                                                        </span>
+                                                        <span className="text-[10px] text-zinc-500">
+                                                            {change.isWinner ? '🏆 Winner' : 'Loser'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className={`text-sm font-bold font-mono ${change.pointsChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                        {change.pointsChange >= 0 ? '+' : ''}{change.pointsChange}
+                                                    </div>
+                                                    <div className="text-[10px] text-zinc-500">
+                                                        Total: {change.newTotal}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </Card>
+                        )}
+
                         {/* Commendation Section */}
                         <Card className="w-full max-w-3xl">
                             <div className="flex items-center space-x-2 mb-6 text-zinc-400">

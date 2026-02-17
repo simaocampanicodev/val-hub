@@ -135,6 +135,15 @@ export interface PlayerReport {
   timestamp: number;
 }
 
+/** Individual player points change after match result verification */
+export interface PlayerPointsChange {
+  playerId: string;
+  playerName: string;
+  pointsChange: number;
+  newTotal: number;
+  isWinner: boolean;
+}
+
 export interface ChatMessage {
   id: string;
   senderId: string;
@@ -161,7 +170,8 @@ export interface MatchState {
   winner: 'A' | 'B' | null;
   reportA: MatchScore | null; 
   reportB: MatchScore | null;
-  playerReports: PlayerReport[]; // ⭐ NOVO: Lista de reports de todos os jogadores
+  playerReports: PlayerReport[]; // ⭐ Lista de reports de todos os jogadores
+  playerPointsChanges: PlayerPointsChange[]; // ⭐ NOVO: Mudanças de pontos individuais após verificação
   readyPlayers: string[]; 
   readyExpiresAt?: number;
   chat: ChatMessage[];
@@ -186,6 +196,7 @@ export interface MatchRecord {
   teamASnapshot: PlayerSnapshot[]; 
   teamBSnapshot: PlayerSnapshot[]; 
   score: string;
+  playerPointsChanges?: PlayerPointsChange[]; // ⭐ NOVO: Mudanças de pontos individuais
 }
 
 export type ThemeMode = 'dark' | 'light';
