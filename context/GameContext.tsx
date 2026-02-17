@@ -107,6 +107,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
   const allUsersRef = useRef<User[]>([]);
   const currentMatchIdRef = useRef<string | null>(null);
+  const matchesBeingCreatedRef = useRef<Set<string>>(new Set()); // ⭐ Rastrear matches em processamento
   const isAdmin = currentUser.username === 'txger.';
   const hasDashboardAccess = currentUser.username === 'txger.' || currentUser.role === 'owner' || currentUser.role === 'mod' || currentUser.role === 'dev' || currentUser.role === 'helper';
   const onlineUserIds = React.useMemo(() => {
@@ -178,10 +179,21 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       setQueue(queueUsers);
       
-      // ⭐ TRIGGER: 10+ jogadores → criar match (permite múltiplas matches simultâneas)
+      // ⭐ TRIGGER: Exatamente 10 pessoas → criar 1 match e limpar queue
       if (queueUsers.length >= 10) {
-        console.log('⚡⚡⚡ 10+ JOGADORES! Criando match...');
-        createMatch(queueUsers.slice(0, 10));
+        // Pega apenas os primeiros 10
+        const matchPlayers = queueUsers.slice(0, 10);
+        const playerIds = matchPlayers.map(u => u.id).sort().join(',');
+        
+        // Evitar criar matches duplicadas
+        if (!matchesBeingCreatedRef.current.has(playerIds)) {
+          console.log('⚡⚡⚡ 10 JOGADORES! Criando match e limpando queue...');
+          matchesBeingCreatedRef.current.add(playerIds);
+          
+          createMatch(matchPlayers).finally(() => {
+            matchesBeingCreatedRef.current.delete(playerIds);
+          });
+        }
       }
     }, (error) => {
       console.error('❌ Erro no listener de queue:', error);
@@ -193,17 +205,22 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // 🔥 LISTENER: Active Match
   useEffect(() => {
     if (!isAuthenticated) return;
-    console.log('🏟️ Listener de match iniciado');
+    console.log('🏟️ Listener de match iniciado para user:', currentUser.id);
     const unsubscribe = onSnapshot(collection(db, COLLECTIONS.ACTIVE_MATCHES), (snapshot) => {
+      console.log(`🏟️ Snapshot recebido com ${snapshot.size} matches`);
       let userMatch: any = null;
       snapshot.forEach(doc => {
         const d = doc.data();
+        console.log(`  📋 Match ${doc.id}: players=${(d.players || []).length}, phase=${d.phase}`);
         if ((d.players || []).includes(currentUser.id)) {
+          console.log(`  ✅ Match encontrada para o utilizador!`);
           userMatch = { id: doc.id, ...d };
         }
       });
       if (userMatch) {
         console.log(`🏟️ Match ativa encontrada: ${userMatch.id} - Phase: ${userMatch.phase}`);
+        console.log(`  📊 Reports: ${(userMatch.playerReports || []).length}`);
+        console.log(`  💰 Points Changes: ${(userMatch.playerPointsChanges || []).length}`);
         currentMatchIdRef.current = userMatch.id;
         const playersData = userMatch.playersData || {};
         const players = userMatch.players.map((id: string) => 
@@ -235,9 +252,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           chat: userMatch.chat || []
         });
       } else if (currentMatchIdRef.current) {
+        console.log('🏟️ Utilizador já não está em nenhuma match, limpando...');
         currentMatchIdRef.current = null;
         setMatchState(null);
       }
+    }, (error) => {
+      console.error('❌ Erro no listener de matches:', error);
     });
     return () => unsubscribe();
   }, [isAuthenticated, currentUser.id]);
@@ -520,11 +540,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateMatch = async (updates: any) => {
-    if (!currentMatchIdRef.current) return;
+    if (!currentMatchIdRef.current) {
+      console.error('❌ currentMatchIdRef.current é null!');
+      return;
+    }
     try {
+      console.log(`📝 Atualizando match ${currentMatchIdRef.current} com:`, updates);
       await updateDoc(doc(db, COLLECTIONS.ACTIVE_MATCHES, currentMatchIdRef.current), { ...updates, updatedAt: serverTimestamp() });
+      console.log(`✅ Match atualizada com sucesso!`);
     } catch (error) {
       console.error('❌ Erro ao atualizar match:', error);
+      console.error('Match ID:', currentMatchIdRef.current);
+      console.error('Updates:', updates);
     }
   };
 
@@ -574,10 +601,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const finalizeMatch = async (finalScore: MatchScore) => {
-    if (!matchState) return;
+    if (!matchState) {
+      console.error('❌ matchState é null!');
+      return;
+    }
     
     console.log('🏁 Finalizando match...');
     console.log('📊 Score final:', finalScore);
+    console.log('🏟️ Match ID:', matchState.id);
+    console.log('👥 Players:', matchState.players.map(p => p.username).join(', '));
     
     const winner = finalScore.scoreA > finalScore.scoreB ? 'A' : 'B';
     console.log(`🏆 Vencedor: Team ${winner}`);
@@ -679,14 +711,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     
     await Promise.all(updates);
+    console.log('✅ Pontos atualizados para todos os jogadores');
+    console.log('📊 Mudanças:', pointsChanges.map(p => `${p.playerName}: ${p.pointsChange >= 0 ? '+' : ''}${p.pointsChange}`).join(', '));
     
     // ⭐ Adicionar pontos ao record antes de salvar
     const recordWithPoints: MatchRecord = { ...record, playerPointsChanges: pointsChanges };
     
     await setDoc(doc(db, COLLECTIONS.MATCHES, matchState.id), { ...recordWithPoints, match_date: serverTimestamp() });
+    console.log('✅ Match salva no histórico');
     
     // ⭐ Armazenar mudanças de pontos no estado da match para o UI exibir
     const scoreResult = { scoreA: finalScore.scoreA, scoreB: finalScore.scoreB };
+    console.log('📡 Enviando atualização final para active_matches...');
     await updateMatch({ 
       phase: MatchPhase.FINISHED, 
       winner, 
@@ -695,6 +731,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       reportA: scoreResult,
       reportB: scoreResult
     });
+    console.log('✅ Match finalizada e match ended screen enviada para todos os jogadores');
     
     setTimeout(() => {
       deleteDoc(doc(db, COLLECTIONS.ACTIVE_MATCHES, matchState.id));
@@ -1222,6 +1259,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // ⭐ Se temos consenso, finalizar a match
     if (consensusResult) {
       console.log('🎉 Finalizando match com resultado consensual');
+      console.log(`  Score: ${consensusResult.scoreA} - ${consensusResult.scoreB}`);
+      console.log(`  Votantes: ${consensusResult.voters.join(', ')}`);
       await finalizeMatch({ 
         scoreA: consensusResult.scoreA, 
         scoreB: consensusResult.scoreB 
