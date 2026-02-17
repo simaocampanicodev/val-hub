@@ -234,8 +234,8 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children }
                 <span className="text-[10px] text-zinc-500">{queue.length}/10 players</span>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="font-mono text-sm text-white">{formatTime(queueElapsed)}</div>
+              <div className="flex items-center gap-4">
+              <div className="font-mono text-base font-bold text-emerald-400">{formatTime(queueElapsed)}</div>
               <div className="w-6 h-6 border-2 border-zinc-700 border-t-rose-500 rounded-full animate-spin" />
             </div>
           </div>

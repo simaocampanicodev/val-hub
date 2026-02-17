@@ -10,7 +10,7 @@ import Button from './ui/Button';
 import Modal from './ui/Modal';
 import { getRankInfo } from '../services/gameService';
 import { MAP_IMAGES } from '../constants';
-import { Trophy, Clock, Ban, AlertTriangle, MessageSquare, Send, ThumbsUp, Flag, X, User } from 'lucide-react';
+import { Trophy, Clock, Ban, AlertTriangle, MessageSquare, Send, ThumbsUp, Flag, X, User, Copy, Lock } from 'lucide-react';
 
 const MatchInterface = () => {
   const { matchState, acceptMatch, draftPlayer, vetoMap, reportResult, sendChatMessage, currentUser, resetMatch, forceTimePass, exitMatchToLobby, handleBotAction, themeMode, isAdmin, commendPlayer, submitReport, matchInteractions, markPlayerAsInteracted } = useGame();
@@ -74,8 +74,7 @@ const MatchInterface = () => {
   };
 
   const minutesPassed = Math.floor(timeLeft / 60000);
-  const isTestMatch = matchState.id?.startsWith?.('testmatch_');
-  const canReport = isTestMatch || minutesPassed >= 20; // ⭐ Test matches: permitir report imediato; normais só após 20min
+  const canReport = minutesPassed >= 20; // reports unlock after 20 minutes (incl. test matches)
 
   // Sincronizar código da partida local com o estado global
   useEffect(() => {
@@ -462,20 +461,20 @@ const MatchInterface = () => {
                             <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
                                 {/* Left Team */}
                                 <div className="text-center lg:text-left w-full lg:w-1/3 space-y-1">
-                                    <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-400">Time</p>
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-400">Your Team</p>
                                     <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
                                         {matchState.captainA?.username || 'Team A'}
                                     </h2>
                                     <p className="text-[11px] text-zinc-400 uppercase tracking-[0.25em] mt-2">
-                                        Team Avg: <span className="text-emerald-400 font-semibold">{avgRankA}</span>
+                                        Team Avg: <span className="text-emerald-400 font-semibold">{String(avgRankA).toUpperCase()}</span>
                                     </p>
                                 </div>
 
-                                {/* Center - Map + Match Code */}
+                                {/* Center - Map */}
                                 <div className="flex flex-col items-center space-y-4 w-full lg:w-1/3">
                                     <div className="flex flex-col items-center space-y-1">
                                         <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[10px] uppercase tracking-[0.25em] text-emerald-300">
-                                            Mapa Escolhido
+                                            Map Selected
                                         </span>
                                         <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-extrabold tracking-tight text-white drop-shadow-[0_0_30px_rgba(0,0,0,0.7)]">
                                             {matchState.selectedMap || 'MAP'}
@@ -486,81 +485,16 @@ const MatchInterface = () => {
                                         </p>
                                     </div>
 
-                                    {/* Match Code Card */}
-                                    <div className="w-full max-w-sm mt-4">
-                                        <Card className="bg-black/80 border-white/10">
-                                            <div className="flex flex-col space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] uppercase tracking-[0.25em] text-zinc-500">
-                                                        Código da Partida
-                                                    </span>
-                                                    {isCaptain && (
-                                                        <span className="text-[10px] text-emerald-400 uppercase tracking-widest">
-                                                            Captain Only
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                {/* Edit/Display Code */}
-                                                {isCaptain ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            type="text"
-                                                            value={localMatchCode}
-                                                            onChange={(e) => setLocalMatchCode(e.target.value.toUpperCase())}
-                                                            placeholder="Enter code..."
-                                                            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-rose-500 font-mono tracking-[0.25em]"
-                                                        />
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={async () => {
-                                                                const trimmed = localMatchCode.trim();
-                                                                if (!trimmed || !matchState?.id) return;
-                                                                try {
-                                                                  await updateDoc(doc(db, 'active_matches', matchState.id), {
-                                                                    matchCode: trimmed.toUpperCase()
-                                                                  });
-                                                                  setLocalMatchCode(trimmed.toUpperCase());
-                                                                } catch (e) {
-                                                                  console.warn('Failed to save match code', e);
-                                                                }
-                                                            }}
-                                                            className="px-3"
-                                                        >
-                                                            Save
-                                                        </Button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <div className="flex-1 px-3 py-2 rounded-xl bg-black/40 border border-white/10 font-mono text-sm tracking-[0.25em] text-zinc-300">
-                                                            {matchState.matchCode ? matchState.matchCode : 'Waiting...'}
-                                                        </div>
-                                                        {matchState.matchCode && (
-                                                            <Button
-                                                                size="icon"
-                                                                variant="ghost"
-                                                                onClick={() => {
-                                                                    navigator.clipboard.writeText(matchState.matchCode || '');
-                                                                }}
-                                                            >
-                                                                <span className="text-xs">Copy</span>
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </Card>
-                                    </div>
                                 </div>
 
                                 {/* Right Team */}
                                 <div className="text-center lg:text-right w-full lg:w-1/3 space-y-1">
-                                    <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-400">Os Inimigos</p>
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-400">Enemies</p>
                                     <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
                                         {matchState.captainB?.username || 'Team B'}
                                     </h2>
                                     <p className="text-[11px] text-zinc-400 uppercase tracking-[0.25em] mt-2">
-                                        Team Avg: <span className="text-rose-400 font-semibold">{avgRankB}</span>
+                                        Team Avg: <span className="text-rose-400 font-semibold">{String(avgRankB).toUpperCase()}</span>
                                     </p>
                                 </div>
                             </div>
@@ -611,13 +545,102 @@ const MatchInterface = () => {
                             <h3 className="uppercase tracking-widest text-zinc-400 text-xs">Match Control</h3>
                             
                             {!canReport ? (
-                                <div className="flex flex-col items-center space-y-2">
-                                    <div className="text-zinc-500 text-sm">Results can be reported in {Math.max(0, 1 - minutesPassed)} minute{Math.max(0, 1 - minutesPassed) === 1 ? '' : 's'}.</div>
-                                    {isAdmin && (
-                                        <Button variant="ghost" size="sm" onClick={forceTimePass}>
-                                            [Admin] Skip Time
-                                        </Button>
+                                <div className="w-full max-w-md text-center space-y-5">
+                                    <div className="flex flex-col items-center space-y-3">
+                                        <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 grid place-items-center">
+                                            <Lock className="w-6 h-6 text-emerald-400" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className={`text-xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
+                                                Match Code
+                                            </p>
+                                            <p className="text-sm text-zinc-500">
+                                                Captains can set the lobby code. Everyone can copy it.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Code Input/Display */}
+                                    {isCaptain ? (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                value={localMatchCode}
+                                                onChange={(e) => setLocalMatchCode(e.target.value.toUpperCase())}
+                                                placeholder="Enter lobby code..."
+                                                className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-base text-white outline-none focus:border-emerald-400 font-mono tracking-[0.25em]"
+                                            />
+                                            <button
+                                                type="button"
+                                                aria-label="Save & copy match code"
+                                                title="Save & copy"
+                                                onClick={async () => {
+                                                    const fallback = (matchState.matchCode || '').trim();
+                                                    const trimmed = localMatchCode.trim() || fallback;
+                                                    if (!trimmed || !matchState?.id) return;
+                                                    const next = trimmed.toUpperCase();
+                                                    try {
+                                                      if ((matchState.matchCode || '').trim() !== next) {
+                                                        await updateDoc(doc(db, 'active_matches', matchState.id), { matchCode: next });
+                                                      }
+                                                      await navigator.clipboard.writeText(next);
+                                                      setLocalMatchCode(next);
+                                                    } catch (e) {
+                                                      console.warn('Failed to save/copy match code', e);
+                                                    }
+                                                }}
+                                                className="shrink-0 w-12 h-12 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 grid place-items-center transition-colors"
+                                            >
+                                                <Copy className="w-5 h-5 text-zinc-200" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-4 py-3 font-mono text-base tracking-[0.25em] text-zinc-200 text-center">
+                                                {matchState.matchCode ? matchState.matchCode : 'WAITING...'}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                aria-label="Copy match code"
+                                                title={matchState.matchCode ? 'Copy' : 'Waiting for code'}
+                                                disabled={!matchState.matchCode}
+                                                onClick={async () => {
+                                                    if (!matchState.matchCode) return;
+                                                    try { await navigator.clipboard.writeText(matchState.matchCode); } catch {}
+                                                }}
+                                                className={`shrink-0 w-12 h-12 rounded-2xl border grid place-items-center transition-colors ${
+                                                    matchState.matchCode
+                                                        ? 'bg-white/5 hover:bg-white/10 border-white/10'
+                                                        : 'bg-white/0 border-white/5 opacity-40 cursor-not-allowed'
+                                                }`}
+                                            >
+                                                <Copy className="w-5 h-5 text-zinc-200" />
+                                            </button>
+                                        </div>
                                     )}
+
+                                    {/* Countdown (bigger + green) */}
+                                    {(() => {
+                                        const remainingMs = Math.max(0, (20 * 60 * 1000) - timeLeft);
+                                        const mins = Math.floor(remainingMs / 60000);
+                                        const secs = Math.floor((remainingMs % 60000) / 1000);
+                                        const t = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                                        return (
+                                            <div className="pt-2">
+                                                <div className="text-emerald-400 font-mono font-bold text-2xl md:text-3xl">
+                                                    {t}
+                                                </div>
+                                                <div className="text-[11px] uppercase tracking-[0.25em] text-emerald-400/80 font-semibold mt-1">
+                                                    Result reporting unlocks in
+                                                </div>
+                                                {isAdmin && (
+                                                    <Button variant="ghost" size="sm" onClick={forceTimePass} className="mt-3">
+                                                        [Admin] Skip Time
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             ) : (
                                 <div className="w-full max-w-md space-y-4 text-center">
