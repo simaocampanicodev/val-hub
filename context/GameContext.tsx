@@ -108,7 +108,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const allUsersRef = useRef<User[]>([]);
   const currentMatchIdRef = useRef<string | null>(null);
   const isAdmin = currentUser.username === 'txger.';
-  const hasDashboardAccess = currentUser.username === 'txger.' || currentUser.role === 'owner' || currentUser.role === 'mod' || currentUser.role === 'dev';
+  const hasDashboardAccess = currentUser.username === 'txger.' || currentUser.role === 'owner' || currentUser.role === 'mod' || currentUser.role === 'dev' || currentUser.role === 'helper';
   const onlineUserIds = React.useMemo(() => {
     const now = Date.now();
     const set = new Set<string>();
@@ -262,6 +262,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           wins: data.wins,
           losses: data.losses,
           winstreak: data.winstreak,
+          lastPointsChange: data.lastPointsChange,
           reputation: data.reputation,
           activeQuests: data.active_quests || [],
           lastDailyQuestGeneration: data.lastDailyQuestGeneration,
@@ -579,34 +580,20 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const winner = finalScore.scoreA > finalScore.scoreB ? 'A' : 'B';
     console.log(`🏆 Vencedor: Team ${winner}`);
     
-    await updateMatch({ phase: MatchPhase.FINISHED, winner, resultReported: true });
-    
-    // ✅ CORREÇÃO: Validar que teamA e teamB existem e são arrays
+    // ✅ Validar que teamA e teamB existem e são arrays (inclui test matches com qualquer número de jogadores)
     if (!Array.isArray(matchState.teamA) || !Array.isArray(matchState.teamB)) {
       console.error('❌ Times não são arrays válidos!');
-      console.error('teamA:', matchState.teamA);
-      console.error('teamB:', matchState.teamB);
       return;
     }
     
     const winningTeam = winner === 'A' ? matchState.teamA : matchState.teamB;
     const losingTeam = winner === 'A' ? matchState.teamB : matchState.teamA;
     
-    // ✅ CORREÇÃO: Validar times antes de acessar propriedades
-    console.log('👥 Winning team raw:', winningTeam);
-    console.log('👥 Losing team raw:', losingTeam);
-    
-    // ✅ CORREÇÃO: Filtrar undefined dos times de forma mais segura
     const validWinningTeam = (winningTeam || []).filter((u: any) => u && u.id && u.username);
     const validLosingTeam = (losingTeam || []).filter((u: any) => u && u.id && u.username);
     
-    console.log('👥 Valid winning team:', validWinningTeam.map((u: any) => u.username).join(', '));
-    console.log('👥 Valid losing team:', validLosingTeam.map((u: any) => u.username).join(', '));
-    
     if (validWinningTeam.length === 0 || validLosingTeam.length === 0) {
       console.error('❌ Times inválidos! Não é possível finalizar match.');
-      console.error('Winning team válido:', validWinningTeam.length, 'de', (winningTeam || []).length);
-      console.error('Losing team válido:', validLosingTeam.length, 'de', (losingTeam || []).length);
       return;
     }
     
@@ -617,10 +604,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       captainA: matchState.captainA!.username,
       captainB: matchState.captainB!.username,
       winner,
-      // ✅ Guardar IDs corretos baseado no vencedor
       teamAIds: (winner === 'A' ? validWinningTeam : validLosingTeam).map((u: any) => u.id),
       teamBIds: (winner === 'B' ? validWinningTeam : validLosingTeam).map((u: any) => u.id),
-      // ✅ Snapshots dos times com validação extra
       teamASnapshot: (matchState.teamA || []).filter((u: any) => u && u.id && u.username).map((u: any) => ({
         id: u.id,
         username: u.username,
@@ -636,29 +621,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       score: `${finalScore.scoreA}-${finalScore.scoreB}`
     };
     
-    console.log('📝 MatchRecord criado:', {
-      teamACount: record.teamASnapshot.length,
-      teamBCount: record.teamBSnapshot.length,
-      winner: record.winner
-    });
-    
     await setDoc(doc(db, COLLECTIONS.MATCHES, matchState.id), { ...record, match_date: serverTimestamp() });
     
-    // ✅ CORRIGIDO: Processar atualizações de pontos de forma mais segura
+    // ✅ Atualizar pontos PRIMEIRO (inclui test matches); depois passar match a FINISHED para o ecrã mostrar lastPointsChange
     const updates: Promise<any>[] = [];
     
-    console.log('💰 Atualizando pontos dos vencedores...');
     for (const w of validWinningTeam) {
-      // ✅ Garantir que temos o usuário atualizado
       const u = allUsersRef.current.find(user => user.id === w.id);
       if (!u) {
-        console.warn(`⚠️ Usuário vencedor não encontrado: ${w.id} (${w.username})`);
+        console.warn(`⚠️ Usuário vencedor não encontrado: ${w.id}`);
         continue;
       }
-      
       const newPoints = calculatePoints(u.points, true, u.winstreak + 1);
-      console.log(`  📈 ${u.username}: ${u.points} → ${newPoints} (+${newPoints - u.points})`);
-      
       updates.push(updateDoc(doc(db, COLLECTIONS.USERS, u.id), {
         points: newPoints,
         lastPointsChange: newPoints - u.points,
@@ -667,18 +641,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
     }
     
-    console.log('💸 Atualizando pontos dos perdedores...');
     for (const l of validLosingTeam) {
-      // ✅ Garantir que temos o usuário atualizado
       const u = allUsersRef.current.find(user => user.id === l.id);
       if (!u) {
-        console.warn(`⚠️ Usuário perdedor não encontrado: ${l.id} (${l.username})`);
+        console.warn(`⚠️ Usuário perdedor não encontrado: ${l.id}`);
         continue;
       }
-      
       const newPoints = calculatePoints(u.points, false, 0);
-      console.log(`  📉 ${u.username}: ${u.points} → ${newPoints} (${newPoints - u.points})`);
-      
       updates.push(updateDoc(doc(db, COLLECTIONS.USERS, u.id), {
         points: newPoints,
         lastPointsChange: newPoints - u.points,
@@ -687,17 +656,14 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
     }
     
-    console.log(`💾 Aplicando ${updates.length} atualizações...`);
     await Promise.all(updates);
-    console.log('✅ Pontos atualizados!');
     
-    console.log('🗑️ Match será deletada em 10 segundos...');
+    // Só depois de pontos gravados: marcar match como FINISHED para o UI mostrar "Match Ended" com lastPointsChange já no perfil
+    await updateMatch({ phase: MatchPhase.FINISHED, winner, resultReported: true });
+    
     setTimeout(() => {
       deleteDoc(doc(db, COLLECTIONS.ACTIVE_MATCHES, matchState.id));
-      console.log('🗑️ Match deletada do Firestore');
     }, 10000);
-    
-    console.log('🏁 Match finalizada com sucesso!');
   };
 
   // [Quests code continua igual...]

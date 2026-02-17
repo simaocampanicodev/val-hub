@@ -24,6 +24,7 @@ const AdminDashboard = () => {
   const {
     themeMode,
     hasDashboardAccess,
+    currentUser,
     allUsers,
     queue,
     onlineUserIds,
@@ -36,8 +37,9 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<TabId>('users');
   const [userSearch, setUserSearch] = useState('');
   const [roleUserId, setRoleUserId] = useState('');
-  /** Combined role + verified: "user" | "user_verified" | "helper" | "helper_verified" | "mod" | "mod_verified" | "dev" | "dev_verified" */
   const [roleAndVerified, setRoleAndVerified] = useState<string>('user');
+
+  const isHelperOnly = currentUser.role === 'helper';
 
   if (!hasDashboardAccess) {
     return (
@@ -85,32 +87,36 @@ const AdminDashboard = () => {
     <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8 text-center">
         <h2 className={`text-4xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
-          DASHBOARD
+          {isHelperOnly ? 'TICKETS' : 'DASHBOARD'}
         </h2>
-        <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">Admin & Mod Panel</p>
+        <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">
+          {isHelperOnly ? 'Support & Suggestions' : 'Admin & Mod Panel'}
+        </p>
       </div>
 
-      <div className={`flex flex-wrap gap-2 p-1 rounded-2xl mb-6 ${themeMode === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}>
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-              activeTab === id
-                ? 'bg-rose-500 text-white shadow-lg'
-                : themeMode === 'dark'
-                  ? 'text-zinc-400 hover:text-white hover:bg-white/10'
-                  : 'text-zinc-600 hover:text-black hover:bg-black/5'
-            }`}
-          >
-            <Icon className="w-4 h-4" />
-            {label}
-          </button>
-        ))}
-      </div>
+      {!isHelperOnly && (
+        <div className={`flex flex-wrap gap-2 p-1 rounded-2xl mb-6 ${themeMode === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}>
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                activeTab === id
+                  ? 'bg-rose-500 text-white shadow-lg'
+                  : themeMode === 'dark'
+                    ? 'text-zinc-400 hover:text-white hover:bg-white/10'
+                    : 'text-zinc-600 hover:text-black hover:bg-black/5'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Users */}
-      {activeTab === 'users' && (
+      {!isHelperOnly && activeTab === 'users' && (
         <Card>
           <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
             <h3 className={`text-lg font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
@@ -177,7 +183,7 @@ const AdminDashboard = () => {
       )}
 
       {/* Queue */}
-      {activeTab === 'queue' && (
+      {!isHelperOnly && activeTab === 'queue' && (
         <Card>
           <h3 className={`text-lg font-display font-bold mb-4 ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
             Players in queue ({queue.length}/10)
@@ -209,7 +215,7 @@ const AdminDashboard = () => {
       )}
 
       {/* Online */}
-      {activeTab === 'online' && (
+      {!isHelperOnly && activeTab === 'online' && (
         <Card>
           <h3 className={`text-lg font-display font-bold mb-4 ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
             Online now ({onlineUsers.length})
@@ -238,8 +244,8 @@ const AdminDashboard = () => {
         </Card>
       )}
 
-      {/* Tickets (support + suggestions) */}
-      {activeTab === 'tickets' && (
+      {/* Tickets (support + suggestions) – visível para todos com acesso (inclui helpers) */}
+      {(isHelperOnly || activeTab === 'tickets') && (
         <div className="space-y-6">
           <Card>
             <h3 className={`text-lg font-display font-bold mb-4 ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
@@ -312,7 +318,7 @@ const AdminDashboard = () => {
       )}
 
       {/* Role Management */}
-      {activeTab === 'roles' && (
+      {!isHelperOnly && activeTab === 'roles' && (
         <Card>
           <h3 className={`text-lg font-display font-bold mb-4 ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
             Set user role
