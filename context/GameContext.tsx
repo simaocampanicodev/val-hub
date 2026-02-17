@@ -733,17 +733,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       score: `${finalScore.scoreA}-${finalScore.scoreB}`
     };
     
-    // ✅ Calcular e armazenar mudanças de pontos individuais
+    // ✅ Calcular e armazenar mudanças de pontos individuais (não atualizamos `users` no cliente)
     const pointsChanges: any[] = [];
-    const updates: Promise<any>[] = [];
-    
-    console.log('💰 Calculando pontos para equipa vencedora...');
+
+    console.log('💰 Calculando pontos para equipa vencedora (simulação local)...');
     for (const w of validWinningTeam) {
       const newPoints = calculatePoints(w.points, true, w.winstreak + 1);
       const pointsChange = newPoints - w.points;
-      
+
       console.log(`  ✅ ${w.username}: ${w.points} → ${newPoints} (${pointsChange >= 0 ? '+' : ''}${pointsChange})`);
-      
+
       pointsChanges.push({
         playerId: w.id,
         playerName: w.username,
@@ -751,22 +750,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         newTotal: newPoints,
         isWinner: true
       });
-      
-      updates.push(updateDoc(doc(db, COLLECTIONS.USERS, w.id), {
-        points: newPoints,
-        lastPointsChange: pointsChange,
-        wins: w.wins + 1,
-        winstreak: w.winstreak + 1
-      }));
     }
-    
-    console.log('💰 Calculando pontos para equipa perdedora...');
+
+    console.log('💰 Calculando pontos para equipa perdedora (simulação local)...');
     for (const l of validLosingTeam) {
       const newPoints = calculatePoints(l.points, false, 0);
       const pointsChange = newPoints - l.points;
-      
+
       console.log(`  ❌ ${l.username}: ${l.points} → ${newPoints} (${pointsChange >= 0 ? '+' : ''}${pointsChange})`);
-      
+
       pointsChanges.push({
         playerId: l.id,
         playerName: l.username,
@@ -774,18 +766,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         newTotal: newPoints,
         isWinner: false
       });
-      
-      updates.push(updateDoc(doc(db, COLLECTIONS.USERS, l.id), {
-        points: newPoints,
-        lastPointsChange: pointsChange,
-        losses: l.losses + 1,
-        winstreak: 0
-      }));
     }
-    
-    console.log(`📊 Total de updates a executar: ${updates.length}`);
-    await Promise.all(updates);
-    console.log('✅ Pontos atualizados para todos os jogadores');
+
+    console.log('ℹ️ Not updating `users` documents from the client (security rules block this).');
+    console.log('➡️ Persisting `playerPointsChanges` in match record — run a backend worker (Cloud Function) to apply changes to `users`.');
     console.log('📊 Mudanças:', pointsChanges.map(p => `${p.playerName}: ${p.pointsChange >= 0 ? '+' : ''}${p.pointsChange}`).join(', '));
     
     // ⭐ Adicionar pontos ao record antes de salvar
@@ -801,6 +785,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       phase: MatchPhase.FINISHED, 
       winner, 
       resultReported: true,
+      resultProcessed: false, // backend must set to true after applying points
       playerPointsChanges: pointsChanges,
       reportA: scoreResult,
       reportB: scoreResult
@@ -814,6 +799,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       phase: MatchPhase.FINISHED,
       winner,
       resultReported: true,
+      resultProcessed: false,
       playerPointsChanges: pointsChanges,
       reportA: scoreResult,
       reportB: scoreResult
