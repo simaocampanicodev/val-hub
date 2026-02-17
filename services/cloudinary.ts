@@ -94,3 +94,86 @@ export const removeAvatar = async (): Promise<void> => {
     throw new Error('Error removing avatar');
   }
 };
+
+const MAX_BANNER_BYTES = 8 * 1024 * 1024; // 8MB for gifs
+
+/**
+ * Upload profile banner (image or gif) to Cloudinary.
+ */
+export const uploadBannerToCloudinary = async (file: File): Promise<string> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const isImage = file.type.startsWith('image/');
+  if (!isImage) {
+    throw new Error('Only images or GIFs are allowed');
+  }
+
+  if (file.size > MAX_BANNER_BYTES) {
+    throw new Error('Banner too large. Maximum 8MB');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('public_id', `banners/${user.uid}_${Date.now()}`);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: 'POST', body: formData }
+  );
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    const msg = err?.error?.message || 'Error uploading banner';
+    throw new Error(msg);
+  }
+
+  const data = await response.json();
+  const url = data.secure_url || data.url;
+  if (!url) {
+    throw new Error('Cloudinary response missing URL');
+  }
+
+  return url;
+};
+
+/**
+ * Remove banner (upload transparent 1x1 so we can clear bannerUrl in Firestore).
+ */
+export const removeBanner = async (): Promise<void> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  const ctx = canvas.getContext('2d');
+  if (ctx) ctx.clearRect(0, 0, 1, 1);
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, 'image/png');
+  });
+
+  if (!blob) {
+    throw new Error('Error creating image');
+  }
+
+  const formData = new FormData();
+  formData.append('file', blob, 'transparent.png');
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('public_id', `banners/${user.uid}_${Date.now()}`);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: 'POST', body: formData }
+  );
+
+  if (!response.ok) {
+    throw new Error('Error removing banner');
+  }
+};

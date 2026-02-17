@@ -4,10 +4,10 @@ import { AGENTS, ROLES, AGENT_IMAGES, AGENT_BANNERS, MAP_IMAGES, MAPS } from '..
 import { getRankInfo, getLevelProgress } from '../services/gameService';
 import Card from './ui/Card';
 import Button from './ui/Button';
-import { Camera, Edit2, Save, X, User as UserIcon, Award, Flame, Star, Shield, Crown, ThumbsUp, TrendingUp, Map as MapIcon, Activity, Users, Link as LinkIcon, Loader2, CheckCircle, AlertTriangle, Trash2, UserPlus } from 'lucide-react';
+import { Camera, Edit2, Save, X, User as UserIcon, Award, Flame, Star, Shield, Crown, ThumbsUp, TrendingUp, Map as MapIcon, Activity, Users, Link as LinkIcon, Loader2, CheckCircle, AlertTriangle, UserPlus, ImagePlus, Code, HelpCircle, BadgeCheck } from 'lucide-react';
 import Modal from './ui/Modal';
-import { GameRole } from '../types';
-import { uploadToCloudinary, removeAvatar } from '../services/cloudinary';
+import { GameRole, UserRole } from '../types';
+import { uploadToCloudinary, uploadBannerToCloudinary } from '../services/cloudinary';
 
 interface BadgeType {
   id: string;
@@ -20,8 +20,9 @@ interface BadgeType {
 }
 
 const Profile = () => {
-  const { currentUser, updateProfile, themeMode, allUsers, viewProfileId, isAdmin, resetSeason, matchHistory, linkRiotAccount, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, showToast } = useGame();
+  const { currentUser, updateProfile, themeMode, allUsers, viewProfileId, isAdmin, resetSeason, matchHistory, linkRiotAccount, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, showToast, onlineUserIds } = useGame();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   
   // Determine which user to show
   const profileUser = (viewProfileId && viewProfileId !== currentUser.id)
@@ -42,15 +43,15 @@ const Profile = () => {
   const [agentError, setAgentError] = useState<string | null>(null);
   const [activeBadge, setActiveBadge] = useState<BadgeType | null>(null);
   
-  // ⭐ NOVO: Estado para loading do upload de avatar
+  // ⭐ NOVO: Estado para loading do upload de avatar e banner
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
   // Riot ID Linking State
   const [riotIdInput, setRiotIdInput] = useState(profileUser.riotId || '');
   const [riotTagInput, setRiotTagInput] = useState(profileUser.riotTag || '');
   const [isLinkingRiot, setIsLinkingRiot] = useState(false);
   const [riotError, setRiotError] = useState<string | null>(null);
-  const [showRemoveAvatarModal, setShowRemoveAvatarModal] = useState(false);
   const [showResetSeasonModal, setShowResetSeasonModal] = useState(false);
   const [showAcceptRequestModal, setShowAcceptRequestModal] = useState(false);
   const [showRejectRequestModal, setShowRejectRequestModal] = useState(false);
@@ -77,7 +78,9 @@ const Profile = () => {
   const totalGames = profileUser.wins + profileUser.losses;
   const winrate = totalGames > 0 ? ((profileUser.wins / totalGames) * 100).toFixed(1) : "0.0";
   const favoriteAgent = profileUser.topAgents[0] || 'Jett';
-  const bannerUrl = AGENT_BANNERS[favoriteAgent] || AGENT_BANNERS['Jett'];
+  const bannerUrl = profileUser.bannerUrl || AGENT_BANNERS[favoriteAgent] || AGENT_BANNERS['Jett'];
+  const isOnline = !isOwnProfile && profileUser.id && onlineUserIds.has(profileUser.id);
+  const isOwner = profileUser.role === 'owner';
 
   // XP Progress Calculation using scaling logic
   const { level: calculatedLevel, currentLevelXP, xpForNextLevel } = getLevelProgress(profileUser.xp || 0);
@@ -229,32 +232,27 @@ const Profile = () => {
     }
   };
 
-  const handleRemoveAvatar = async () => {
-    if (!isOwnProfile) return;
-    setShowRemoveAvatarModal(true);
-  };
-
-  const confirmRemoveAvatar = async () => {
+  const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0] || !isOwnProfile) return;
+    const file = e.target.files[0];
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select an image or GIF.', 'error');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      showToast('Banner too large! Maximum 8MB.', 'error');
+      return;
+    }
     try {
-      setIsUploadingAvatar(true);
-      console.log('🗑️ Removendo avatar...');
-      
-      // Remover avatar do Cloudinary (upload imagem transparente)
-      await removeAvatar();
-      
-      console.log('💾 Removendo avatarUrl do Firestore...');
-      
-      // Remover avatarUrl do Firestore (definir como undefined)
-      await updateProfile({ avatarUrl: undefined });
-      
-      console.log('✅ Avatar removido com sucesso!');
-      showToast('Profile photo removed successfully!', 'success');
-      
-    } catch (error: any) {
-      console.error('❌ Erro ao remover avatar:', error);
-      showToast(error.message || 'Error removing photo. Try again.', 'error');
+      setIsUploadingBanner(true);
+      const url = await uploadBannerToCloudinary(file);
+      await updateProfile({ bannerUrl: url });
+      showToast('Banner updated!', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Error updating banner.', 'error');
     } finally {
-      setIsUploadingAvatar(false);
+      setIsUploadingBanner(false);
+      bannerInputRef.current && (bannerInputRef.current.value = '');
     }
   };
 
@@ -413,10 +411,24 @@ const Profile = () => {
       {/* Hero Banner */}
       <div className={`relative rounded-3xl overflow-hidden min-h-[300px] md:min-h-[250px] shadow-2xl ${themeMode === 'dark' ? 'border border-white/5' : 'border border-zinc-200'}`}>
         <div 
-            className="absolute inset-0 bg-cover bg-[center_top_20%] opacity-40 transform scale-105 transition-transform duration-1000 hover:scale-100"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 transform scale-105 transition-transform duration-1000"
             style={{ backgroundImage: `url(${bannerUrl})` }}
         ></div>
         <div className={`absolute inset-0 ${themeMode === 'dark' ? 'bg-gradient-to-b from-transparent via-black/40 to-black/90' : 'bg-gradient-to-b from-transparent via-white/20 to-white/60'}`}></div>
+        {isOwnProfile && (
+          <div className="absolute top-4 right-4 z-20">
+            <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={handleBannerChange} />
+            <button
+              type="button"
+              onClick={() => bannerInputRef.current?.click()}
+              disabled={isUploadingBanner}
+              className="p-2.5 rounded-xl bg-black/60 hover:bg-black/80 text-white disabled:opacity-50 flex items-center gap-2 shadow-lg border border-white/10"
+            >
+              {isUploadingBanner ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
+              <span className="text-xs font-medium">Change banner</span>
+            </button>
+          </div>
+        )}
 
         <div className="absolute bottom-0 left-0 w-full p-6 md:p-8 flex flex-col md:flex-row items-start md:items-end space-y-4 md:space-y-0 md:space-x-6 z-10">
             <div className="relative group">
@@ -441,47 +453,80 @@ const Profile = () => {
                                 <Camera className="text-white w-8 h-8" />
                             )}
                         </button>
-                        {profileUser.avatarUrl && !isUploadingAvatar && (
-                            <button 
-                                onClick={handleRemoveAvatar}
-                                className="absolute -bottom-2 -right-2 w-8 h-8 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-all transform hover:scale-110"
-                                title="Remove photo"
-                            >
-                                <Trash2 className="text-white w-4 h-4" />
-                            </button>
-                        )}
                     </>
                 )}
             </div>
 
             <div className="mb-2 w-full flex-1 min-w-0">
+                {/* Name + verified + staff badge + online (compact) */}
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                     <h1 className="text-3xl md:text-4xl font-display font-bold text-white shadow-black drop-shadow-lg truncate max-w-full">{profileUser.username}</h1>
+                    {!isOwner && profileUser.verified && (
+                      <span className="flex-shrink-0 text-blue-400" title="Verified">
+                        <BadgeCheck className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
+                      </span>
+                    )}
+                    {(profileUser.role === 'owner' || profileUser.role === 'mod' || profileUser.role === 'dev' || profileUser.role === 'helper') && (
+                      <span 
+                        className={`flex-shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          profileUser.role === 'owner' ? 'bg-amber-500/30 text-amber-300 border border-amber-400/50 shadow-[0_0_8px_rgba(245,158,11,0.2)]' :
+                          profileUser.role === 'mod' ? 'bg-amber-500/20 text-amber-200/90 border border-amber-500/40' :
+                          profileUser.role === 'dev' ? 'bg-violet-500/30 text-violet-300 border border-violet-500/40' :
+                          'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+                        }`}
+                        title={profileUser.role === 'owner' ? 'Owner' : profileUser.role === 'mod' ? 'Moderator' : profileUser.role === 'dev' ? 'Developer' : 'Helper'}
+                      >
+                        {profileUser.role === 'owner' && <Crown className="w-3 h-3" />}
+                        {profileUser.role === 'mod' && <Shield className="w-3 h-3" />}
+                        {profileUser.role === 'dev' && <Code className="w-3 h-3" />}
+                        {profileUser.role === 'helper' && <HelpCircle className="w-3 h-3" />}
+                        {profileUser.role}
+                      </span>
+                    )}
+                    {!isOwnProfile && (
+                      <span className={`flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium uppercase ${isOnline ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40' : 'bg-zinc-600/50 text-zinc-400 border border-white/10'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`} />
+                        {isOnline ? 'Online' : 'Offline'}
+                      </span>
+                    )}
+                </div>
+                <div className="flex space-x-4 text-sm text-zinc-400 font-medium mb-3">
+                    <span>{profileUser.primaryRole}</span>
+                    <span className="text-zinc-600">•</span>
+                    <span>{profileUser.secondaryRole}</span>
+                </div>
+
+                {/* Rank + Riot ID (separate row, no level here) */}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span 
                         className="px-3 py-1 rounded-full text-xs font-bold text-white uppercase border border-white/20 shadow-lg flex-shrink-0"
-                        style={{ backgroundColor: rank.color, textShadow: '0 3px 6px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.95), 0 1px 2px rgba(0,0,0,0.9)' }}
+                        style={{ backgroundColor: rank.color, textShadow: '0 2px 4px rgba(0,0,0,0.9)' }}
                     >
                         {rank.name}
                     </span>
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-800 text-zinc-300 uppercase border border-white/10 shadow-lg flex-shrink-0">
-                        Lvl {displayLevel}
-                    </span>
                     {profileUser.riotId && (
-                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-600/20 border border-rose-500/30 text-rose-400 uppercase flex-shrink-0 flex items-center">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-rose-600/20 border border-rose-500/30 text-rose-300 flex-shrink-0 flex items-center gap-1">
                             {profileUser.riotId}#{profileUser.riotTag}
-                            <CheckCircle className="w-3 h-3 ml-1" />
+                            <CheckCircle className="w-3 h-3" />
                         </span>
                     )}
                 </div>
-                <div className="flex space-x-4 text-sm text-zinc-300 font-medium">
-                    <span>{profileUser.primaryRole}</span>
-                    <span className="text-zinc-500">•</span>
-                    <span>{profileUser.secondaryRole}</span>
+
+                {/* XP bar with level below */}
+                <div className="flex flex-col w-full md:max-w-xs mb-2">
+                    <div className="flex justify-between text-[10px] text-zinc-500 uppercase tracking-wider font-medium mb-1">
+                         <span>XP Progress</span>
+                         <span>{currentLevelXP} / {xpForNextLevel}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${xpPercent}%` }}></div>
+                    </div>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-medium mt-1">Level {displayLevel}</p>
                 </div>
 
                 {/* Add Friend / Friend status (when viewing someone else's profile) */}
                 {!isOwnProfile && (
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                         {currentUser.friends?.includes(profileUser.id) ? (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium">
                                 <CheckCircle className="w-4 h-4" />
@@ -508,17 +553,6 @@ const Profile = () => {
                         )}
                     </div>
                 )}
-                
-                {/* XP Bar (Mobile Fixed) */}
-                <div className="mt-4 w-full md:max-w-xs flex flex-col">
-                    <div className="flex justify-between text-[10px] text-zinc-400 mb-1 uppercase tracking-wider font-bold">
-                         <span>XP Progress</span>
-                         <span>{currentLevelXP} / {xpForNextLevel}</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-500" style={{ width: `${xpPercent}%` }}></div>
-                    </div>
-                </div>
             </div>
             
             {/* Admin Reset Button */}
@@ -804,16 +838,6 @@ const Profile = () => {
       </div>
 
       {/* Modals */}
-      <Modal
-        isOpen={showRemoveAvatarModal}
-        onClose={() => setShowRemoveAvatarModal(false)}
-        title="Remove Profile Photo"
-        message="Are you sure you want to remove your profile photo? This action cannot be undone."
-        confirmText="Remove"
-        cancelText="Cancel"
-        onConfirm={confirmRemoveAvatar}
-        variant="warning"
-      />
       <Modal
         isOpen={showResetSeasonModal}
         onClose={() => setShowResetSeasonModal(false)}

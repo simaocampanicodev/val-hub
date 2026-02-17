@@ -24,12 +24,11 @@ const Leaderboard = () => {
 
   return (
     <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-        <div className="text-center md:text-left mb-4 md:mb-0">
-            <h2 className={`text-4xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>LEADERBOARD</h2>
-            <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">Top Rated Players</p>
-        </div>
-        
+      <div className="mb-8 text-center">
+        <h2 className={`text-4xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>RANKINGS</h2>
+        <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">Top Rated Players</p>
+      </div>
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
         <div className={`flex p-1 rounded-2xl ${themeMode === 'dark' ? 'bg-white/5' : 'bg-zinc-200'}`}>
             <button 
                 onClick={() => setSortBy('mmr')}

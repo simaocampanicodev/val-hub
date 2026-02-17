@@ -47,11 +47,16 @@ export interface FriendRequest {
     timestamp: number;
 }
 
+/** Staff/display role: owner, mod and dev get dashboard access */
+export type UserRole = 'user' | 'owner' | 'mod' | 'dev' | 'helper';
+
 export interface User {
   id: string;
   email?: string;
   username: string;
   avatarUrl?: string;
+  /** Custom profile banner image/gif URL; if set, overrides favorite agent banner */
+  bannerUrl?: string;
   riotId?: string; // Player Name
   riotTag?: string; // #EUW
   points: number; // MMR
@@ -66,7 +71,13 @@ export interface User {
   secondaryRole: GameRole;
   topAgents: string[];
   isBot?: boolean;
-  
+  /** Last activity timestamp for online status (only shown to others) */
+  lastSeenAt?: number;
+  /** Staff/display badge: mod, dev, helper */
+  role?: UserRole;
+  /** Verified badge on profile */
+  verified?: boolean;
+
   // Social
   friends: string[]; // List of User IDs
   friendRequests: FriendRequest[];
@@ -84,6 +95,21 @@ export interface Report {
   reporter: string;
   reportedUser: string;
   reason: string;
+  timestamp: number;
+}
+
+/** Support ticket or site suggestion (submitted by users, visible in admin dashboard) */
+export type TicketType = 'support' | 'suggestion';
+
+export interface Ticket {
+  id: string;
+  userId: string;
+  username: string;
+  type: TicketType;
+  /** For suggestions: structured parts (e.g. title, description, category) */
+  subject?: string;
+  message?: string;
+  parts?: Record<string, string>;
   timestamp: number;
 }
 

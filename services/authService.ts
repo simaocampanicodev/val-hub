@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../lib/firestore';
 import { auth } from './firebase'; // ⭐ IMPORTANTE: Importar auth
-import { User, GameRole } from '../types';
+import { User, GameRole, UserRole } from '../types';
 
 export interface RegisterData {
   email: string;
@@ -180,7 +180,14 @@ export const loginUser = async (email: string, password: string): Promise<{ succ
       activeQuests: userData.active_quests || [],
       friends: userData.friends || [],
       friendRequests: userData.friend_requests || [],
-      friendQuestCountedIds: userData.friend_quest_counted_ids || []
+      friendQuestCountedIds: userData.friend_quest_counted_ids || [],
+      avatarUrl: userData.avatarUrl,
+      bannerUrl: userData.bannerUrl,
+      riotId: userData.riotId,
+      riotTag: userData.riotTag,
+      lastSeenAt: userData.lastSeenAt,
+      role: (userData.role as UserRole) || 'user',
+      verified: !!userData.verified
     };
 
     return { success: true, user };
@@ -214,18 +221,26 @@ export const updateUserProfile = async (userId: string, updates: Partial<User>):
     if (updates.riotId !== undefined) dbUpdates.riotId = updates.riotId;
     if (updates.riotTag !== undefined) dbUpdates.riotTag = updates.riotTag;
     if (updates.friendQuestCountedIds !== undefined) dbUpdates.friend_quest_counted_ids = updates.friendQuestCountedIds;
+    if (updates.role !== undefined) dbUpdates.role = updates.role;
+    if (updates.verified !== undefined) dbUpdates.verified = updates.verified;
+    if (updates.lastSeenAt !== undefined) dbUpdates.lastSeenAt = updates.lastSeenAt;
 
     // ✅ CORREÇÃO: Permitir remover avatarUrl
     if ('avatarUrl' in updates) {
-      // Se avatarUrl é null ou undefined, remover o campo
       if (updates.avatarUrl === null || updates.avatarUrl === undefined) {
         dbUpdates.avatarUrl = deleteField();
       } else {
-        // Caso contrário, atualizar com a nova URL
         dbUpdates.avatarUrl = updates.avatarUrl;
       }
     }
-    
+    if ('bannerUrl' in updates) {
+      if (updates.bannerUrl === null || updates.bannerUrl === undefined) {
+        dbUpdates.bannerUrl = deleteField();
+      } else {
+        dbUpdates.bannerUrl = updates.bannerUrl;
+      }
+    }
+
     if (updates.lastPointsChange !== undefined) dbUpdates.lastPointsChange = updates.lastPointsChange;
     if (updates.lastDailyQuestGeneration !== undefined) dbUpdates.lastDailyQuestGeneration = updates.lastDailyQuestGeneration;
     if (updates.lastMonthlyQuestGeneration !== undefined) dbUpdates.lastMonthlyQuestGeneration = updates.lastMonthlyQuestGeneration;
@@ -268,8 +283,15 @@ export const getAllUsers = async (): Promise<User[]> => {
         activeQuests: u.active_quests || [],
         friends: u.friends || [],
         friendRequests: u.friend_requests || [],
-        friendQuestCountedIds: u.friend_quest_counted_ids || []
-      };
+        friendQuestCountedIds: u.friend_quest_counted_ids || [],
+        avatarUrl: u.avatarUrl,
+        bannerUrl: u.bannerUrl,
+        riotId: u.riotId,
+        riotTag: u.riotTag,
+        lastSeenAt: u.lastSeenAt,
+        role: (u.role as UserRole) || 'user',
+        verified: !!u.verified
+      } as User;
     });
   } catch (error) {
     console.error('❌ Erro ao buscar usuários:', error);
@@ -305,8 +327,15 @@ export const getUserById = async (userId: string): Promise<User | null> => {
       activeQuests: u.active_quests || [],
       friends: u.friends || [],
       friendRequests: u.friend_requests || [],
-      friendQuestCountedIds: u.friend_quest_counted_ids || []
-    };
+      friendQuestCountedIds: u.friend_quest_counted_ids || [],
+      avatarUrl: u.avatarUrl,
+      bannerUrl: u.bannerUrl,
+      riotId: u.riotId,
+      riotTag: u.riotTag,
+      lastSeenAt: u.lastSeenAt,
+      role: (u.role as UserRole) || 'user',
+      verified: !!u.verified
+    } as User;
   } catch (error) {
     console.error('❌ Erro ao buscar usuário:', error);
     return null;

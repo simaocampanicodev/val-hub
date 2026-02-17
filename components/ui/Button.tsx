@@ -35,8 +35,8 @@ const Button: React.FC<ButtonProps> = ({
     <button
       className={`
         relative overflow-hidden transition-all duration-300 ease-out 
-        rounded-2xl uppercase tracking-wider font-display
-        disabled:opacity-50 disabled:cursor-not-allowed
+        rounded-2xl uppercase tracking-wider font-display micro-hover
+        disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
         ${variants[variant]} 
         ${sizes[size]} 
         ${activeClass}

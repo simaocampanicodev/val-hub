@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { Home, BarChart2, LogOut, History, Moon, Sun, Menu, X, ShieldAlert, Target, Users } from 'lucide-react';
+import { Home, BarChart2, LogOut, History, Moon, Sun, Menu, X, LayoutDashboard, Target, Users, Lightbulb } from 'lucide-react';
 import Button from './ui/Button';
 
 interface LayoutProps {
@@ -11,7 +11,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children }) => {
-  const { isAuthenticated, logout, themeMode, toggleTheme, matchState, currentUser, isAdmin, setViewProfileId } = useGame();
+  const { isAuthenticated, logout, themeMode, toggleTheme, matchState, currentUser, hasDashboardAccess, setViewProfileId } = useGame();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Calculate pending friend requests
@@ -23,10 +23,11 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children }
     { id: 'history', icon: History, label: 'History' },
     { id: 'quests', icon: Target, label: 'Quests' },
     { id: 'friends', icon: Users, label: 'Friends' },
+    { id: 'suggestions', icon: Lightbulb, label: 'Suggestions' },
   ];
 
-  if (isAdmin) {
-      navItems.push({ id: 'reports', icon: ShieldAlert, label: 'Reports' });
+  if (hasDashboardAccess) {
+    navItems.push({ id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' });
   }
 
   const handleProfileClick = () => {
@@ -78,7 +79,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children }
                             key={item.id}
                             onClick={() => setCurrentView(item.id)}
                             className={`
-                                flex items-center px-4 py-2 rounded-2xl transition-all duration-200 text-sm font-medium relative
+                                flex items-center px-4 py-2 rounded-2xl transition-all duration-200 text-sm font-medium relative micro-hover
                                 ${currentView === item.id 
                                     ? 'bg-rose-500/10 text-rose-500' 
                                     : 'text-zinc-500 hover:text-rose-500'}

@@ -51,11 +51,11 @@ const MatchHistory = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-center">
-        <div>
-            <h2 className={`text-3xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>MATCH HISTORY</h2>
-            <p className="text-zinc-500 uppercase tracking-widest text-xs">Past Performance</p>
-        </div>
+      <div className="mb-8 text-center">
+        <h2 className={`text-4xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>HISTORY</h2>
+        <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">Past Performance</p>
+      </div>
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
         <div className={`flex p-1 rounded-2xl ${themeMode === 'dark' ? 'bg-white/5' : 'bg-zinc-200'}`}>
             <button 
                 onClick={() => setFilter('mine')}

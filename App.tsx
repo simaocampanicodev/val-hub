@@ -7,14 +7,15 @@ import Profile from './components/Profile';
 import Leaderboard from './components/Leaderboard';
 import MatchInterface from './components/MatchInterface';
 import MatchHistory from './components/MatchHistory';
-import AdminReports from './components/AdminReports';
+import AdminDashboard from './components/AdminDashboard';
+import SuggestionsView from './components/SuggestionsView';
 import Auth from './components/Auth';
 import QuestsView from './components/QuestsView';
 import FriendsView from './components/FriendsView';
 import { ToastContainer } from './components/ui/Toast';
 
 const AppContent = () => {
-  const { matchState, isAuthenticated, viewProfileId, setViewProfileId, toasts, removeToast, themeMode } = useGame();
+  const { matchState, isAuthenticated, viewProfileId, setViewProfileId, toasts, removeToast, themeMode, hasDashboardAccess } = useGame();
   const [currentView, setCurrentView] = useState('queue');
 
   // If viewProfileId is set, force switch to profile view
@@ -66,8 +67,11 @@ const AppContent = () => {
         case 'friends':
             content = <FriendsView />;
             break;
-        case 'reports':
-            content = <AdminReports />;
+        case 'suggestions':
+            content = <SuggestionsView />;
+            break;
+        case 'dashboard':
+            content = <AdminDashboard />;
             break;
         default:
             content = <Queue />;
@@ -77,7 +81,9 @@ const AppContent = () => {
   return (
     <>
       <Layout currentView={currentView} setCurrentView={handleSetCurrentView}>
-        {content}
+        <div key={currentView} className="view-transition-enter">
+          {content}
+        </div>
       </Layout>
       <ToastContainer 
         toasts={toasts} 

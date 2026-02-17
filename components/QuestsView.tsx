@@ -25,7 +25,7 @@ const QuestsView = () => {
         <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">Daily Objectives & Rewards</p>
       </div>
 
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center justify-center text-center">
         <Quests />
         
         {isAdmin && (

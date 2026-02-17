@@ -13,7 +13,7 @@ const Card: React.FC<CardProps> = ({ children, className = '', noPadding = false
   return (
     <div 
       className={`
-        relative 
+        relative card-hover
         ${themeMode === 'dark' ? 'bg-black/40 border-white/10' : 'bg-white/60 border-black/5'}
         backdrop-blur-xl border 
         ${noPadding ? '' : 'p-8'} 

@@ -2,20 +2,21 @@
 // ⭐ TODAS AS CORREÇÕES APLICADAS E TESTADAS
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
-import { User, MatchState, MatchPhase, GameRole, GameMap, MatchRecord, ThemeMode, PlayerSnapshot, MatchScore, ChatMessage, Report, Quest, UserQuest, QuestType, FriendRequest } from '../types';
+import { User, MatchState, MatchPhase, GameRole, GameMap, MatchRecord, ThemeMode, PlayerSnapshot, MatchScore, ChatMessage, Report, Quest, UserQuest, QuestType, FriendRequest, Ticket, TicketType, UserRole } from '../types';
 import { INITIAL_POINTS, MAPS, MATCH_FOUND_SOUND, QUEST_POOL } from '../constants';
 import { generateBot, calculatePoints, calculateLevel, getLevelProgress } from '../services/gameService';
 import { auth, logoutUser } from '../services/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { 
-  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot,
+  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, onSnapshot,
   query, where, orderBy, limit, serverTimestamp, Timestamp
 } from 'firebase/firestore';
 import { db } from '../lib/firestore';
 import { registerUser as registerUserInDb, updateUserProfile as updateUserInDb } from '../services/authService';
 import { Toast, ToastType } from '../components/ui/Toast';
 
-const COLLECTIONS = { USERS: 'users', QUEUE: 'queue_entries', ACTIVE_MATCHES: 'active_matches', MATCHES: 'matches' };
+const COLLECTIONS = { USERS: 'users', QUEUE: 'queue_entries', ACTIVE_MATCHES: 'active_matches', MATCHES: 'matches', TICKETS: 'tickets' };
+const ONLINE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
 
 interface RegisterData {
   email: string;
@@ -28,6 +29,8 @@ interface RegisterData {
 interface GameContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
+  /** txger. or role owner/mod/dev can access dashboard */
+  hasDashboardAccess: boolean;
   completeRegistration: (data: RegisterData) => Promise<void>;
   logout: () => void;
   currentUser: User;
@@ -70,6 +73,11 @@ interface GameContextType {
   showToast: (message: string, type?: ToastType, duration?: number) => void;
   removeToast: (id: string) => void;
   toasts: Toast[];
+  tickets: Ticket[];
+  submitTicket: (type: TicketType, subject: string, message: string, parts?: Record<string, string>) => Promise<void>;
+  /** Users currently online (lastSeenAt within threshold); for display on other profiles */
+  onlineUserIds: Set<string>;
+  setUserRole: (userId: string, role: UserRole, verified: boolean) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -95,10 +103,20 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [viewProfileId, setViewProfileId] = useState<string | null>(null);
   const [matchInteractions, setMatchInteractions] = useState<string[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   
   const allUsersRef = useRef<User[]>([]);
   const currentMatchIdRef = useRef<string | null>(null);
   const isAdmin = currentUser.username === 'txger.';
+  const hasDashboardAccess = currentUser.username === 'txger.' || currentUser.role === 'owner' || currentUser.role === 'mod' || currentUser.role === 'dev';
+  const onlineUserIds = React.useMemo(() => {
+    const now = Date.now();
+    const set = new Set<string>();
+    allUsers.forEach(u => {
+      if (u.lastSeenAt && (now - u.lastSeenAt) < ONLINE_THRESHOLD_MS) set.add(u.id);
+    });
+    return set;
+  }, [allUsers]);
 
   useEffect(() => { allUsersRef.current = allUsers; }, [allUsers]);
 
@@ -116,8 +134,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           winstreak: d.winstreak || 0, primaryRole: d.primary_role as GameRole,
           secondaryRole: d.secondary_role as GameRole, topAgents: d.top_agents || [],
           isBot: false, activeQuests: d.active_quests || [], friends: d.friends || [],
-          friendRequests: d.friend_requests || [], friendQuestCountedIds: d.friend_quest_counted_ids || [], avatarUrl: d.avatarUrl,
-          riotId: d.riotId, riotTag: d.riotTag, lastPointsChange: d.lastPointsChange
+          friendRequests: d.friend_requests || [], friendQuestCountedIds: d.friend_quest_counted_ids || [],
+          avatarUrl: d.avatarUrl, bannerUrl: d.bannerUrl, riotId: d.riotId, riotTag: d.riotTag,
+          lastPointsChange: d.lastPointsChange, lastSeenAt: d.lastSeenAt,
+          role: (d.role as UserRole) || 'user', verified: !!d.verified
         };
       });
       setAllUsers(users);
@@ -236,6 +256,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           friendRequests: data.friend_requests || [],
           friendQuestCountedIds: data.friend_quest_counted_ids || [],
           avatarUrl: data.avatarUrl,
+          bannerUrl: data.bannerUrl,
           username: data.username,
           points: data.points,
           wins: data.wins,
@@ -244,13 +265,51 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           reputation: data.reputation,
           activeQuests: data.active_quests || [],
           lastDailyQuestGeneration: data.lastDailyQuestGeneration,
-          lastMonthlyQuestGeneration: data.lastMonthlyQuestGeneration
+          lastMonthlyQuestGeneration: data.lastMonthlyQuestGeneration,
+          lastSeenAt: data.lastSeenAt,
+          role: (data.role as UserRole) || 'user',
+          verified: !!data.verified
         }));
       }
     });
     
     return () => unsubscribe();
   }, [isAuthenticated, currentUser.id]);
+
+  // 🔥 Heartbeat: update lastSeenAt for online status (only for current user)
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser.id || currentUser.id === 'user-1') return;
+    const tick = () => {
+      const now = Date.now();
+      updateDoc(doc(db, COLLECTIONS.USERS, currentUser.id), { lastSeenAt: now });
+      setCurrentUser(prev => ({ ...prev, lastSeenAt: now }));
+    };
+    tick();
+    const interval = setInterval(tick, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, currentUser.id]);
+
+  // 🔥 LISTENER: Tickets (support + suggestions for admin dashboard)
+  useEffect(() => {
+    const q = query(collection(db, COLLECTIONS.TICKETS), orderBy('timestamp', 'desc'), limit(200));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list: Ticket[] = snapshot.docs.map(docSnap => {
+        const d = docSnap.data();
+        return {
+          id: docSnap.id,
+          userId: d.userId,
+          username: d.username,
+          type: d.type || 'support',
+          subject: d.subject,
+          message: d.message,
+          parts: d.parts,
+          timestamp: d.timestamp ?? 0
+        };
+      });
+      setTickets(list);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // 🔥 LISTENER: Match History (histórico de partidas para MatchHistory e Profile)
   useEffect(() => {
@@ -1410,9 +1469,37 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  const submitTicket = useCallback(async (type: TicketType, subject: string, message: string, parts?: Record<string, string>) => {
+    if (!currentUser.id || currentUser.id === 'user-1') return;
+    try {
+      await addDoc(collection(db, COLLECTIONS.TICKETS), {
+        userId: currentUser.id,
+        username: currentUser.username,
+        type,
+        subject: subject || undefined,
+        message: message || undefined,
+        parts: parts || undefined,
+        timestamp: Date.now()
+      });
+      showToast(type === 'suggestion' ? 'Suggestion submitted!' : 'Ticket submitted!', 'success');
+    } catch (e: any) {
+      showToast(e?.message || 'Failed to submit', 'error');
+    }
+  }, [currentUser.id, currentUser.username, showToast]);
+
+  const setUserRole = useCallback(async (userId: string, role: UserRole, verified: boolean) => {
+    if (!hasDashboardAccess) return;
+    try {
+      await updateDoc(doc(db, COLLECTIONS.USERS, userId), { role, verified });
+      showToast('User role updated', 'success');
+    } catch (e: any) {
+      showToast(e?.message || 'Failed to update role', 'error');
+    }
+  }, [hasDashboardAccess, showToast]);
+
   return (
     <GameContext.Provider value={{
-      isAuthenticated, isAdmin, completeRegistration, logout, currentUser, pendingAuthUser,
+      isAuthenticated, isAdmin, hasDashboardAccess, completeRegistration, logout, currentUser, pendingAuthUser,
       updateProfile, linkRiotAccount, queue, joinQueue, leaveQueue, testFillQueue,
       createTestMatchDirect, exitMatchToLobby,
       matchState, acceptMatch, draftPlayer, vetoMap, reportResult, sendChatMessage,
@@ -1421,7 +1508,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       viewProfileId, setViewProfileId, claimQuestReward, resetDailyQuests,
       sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
       matchInteractions, markPlayerAsInteracted,
-      showToast, removeToast, toasts
+      showToast, removeToast, toasts,
+      tickets, submitTicket, onlineUserIds, setUserRole
     }}>
       {children}
     </GameContext.Provider>

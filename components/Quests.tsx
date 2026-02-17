@@ -43,7 +43,7 @@ const Quests = () => {
   };
 
   return (
-    <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="w-full max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 justify-items-center text-center">
         {sortedQuests.map((userQuest) => {
             const questDef = QUEST_POOL.find(q => q.id === userQuest.questId);
             if (!questDef) return null;
@@ -54,7 +54,7 @@ const Quests = () => {
                 <div 
                     key={userQuest.questId} 
                     className={`
-                        relative overflow-hidden rounded-2xl border p-5 flex flex-col justify-between transition-all hover:scale-[1.01]
+                        relative overflow-hidden rounded-2xl border p-5 flex flex-col justify-between transition-all hover:scale-[1.01] w-full max-w-md
                         ${themeMode === 'dark' 
                             ? 'bg-[#0f0f0f] border-zinc-800 hover:border-zinc-700' 
                             : 'bg-white border-zinc-200 hover:border-zinc-300 shadow-sm'}
@@ -71,7 +71,7 @@ const Quests = () => {
                         </div>
                     </div>
 
-                    <div className="mb-4">
+                    <div className="mb-4 text-center">
                         <h4 className={`font-display font-bold text-lg leading-tight mb-1 ${themeMode === 'dark' ? 'text-zinc-100' : 'text-zinc-800'}`}>
                             {questDef.description}
                         </h4>
@@ -80,7 +80,7 @@ const Quests = () => {
                         </p>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-3 text-center">
                         <div className={`flex justify-between text-xs font-mono ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>
                             <span>PROGRESS</span>
                             <span className={userQuest.completed ? 'text-emerald-500' : ''}>{userQuest.progress} / {questDef.target}</span>

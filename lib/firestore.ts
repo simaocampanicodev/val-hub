@@ -9,5 +9,6 @@ export const COLLECTIONS = {
   ACTIVE_MATCHES: 'active_matches',
   QUEUE: 'queue_entries',
   FRIENDS: 'friends',
-  QUESTS: 'quests'
+  QUESTS: 'quests',
+  TICKETS: 'tickets'
 } as const;
