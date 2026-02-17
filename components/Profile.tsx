@@ -372,9 +372,8 @@ const Profile = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
-      
-      {/* Badge Modal */}
+    <>
+      {/* Badge Modal — fora da div animada para que fixed funcione corretamente */}
       {activeBadge && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setActiveBadge(null)}>
               <div className="max-w-sm w-full animate-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
@@ -408,6 +407,45 @@ const Profile = () => {
           </div>
       )}
 
+      {/* Modals fora da div animada */}
+      <Modal
+        isOpen={showResetSeasonModal}
+        onClose={() => setShowResetSeasonModal(false)}
+        title="Reset Season"
+        message="ARE YOU SURE? This will reset everyone's points to 1000. This action cannot be undone."
+        confirmText="Reset Season"
+        cancelText="Cancel"
+        onConfirm={confirmResetSeason}
+        variant="danger"
+      />
+      <Modal
+        isOpen={showAcceptRequestModal}
+        onClose={() => setShowAcceptRequestModal(false)}
+        title="Accept Friend Request"
+        message={`Do you want to accept ${profileUser.username}'s friend request?`}
+        confirmText="Accept"
+        cancelText="Cancel"
+        onConfirm={() => {
+          acceptFriendRequest(profileUser.id);
+          setShowAcceptRequestModal(false);
+        }}
+        variant="info"
+      />
+      <Modal
+        isOpen={showRejectRequestModal}
+        onClose={() => setShowRejectRequestModal(false)}
+        title="Reject Friend Request"
+        message={`Do you want to reject ${profileUser.username}'s friend request?`}
+        confirmText="Reject"
+        cancelText="Cancel"
+        onConfirm={() => {
+          rejectFriendRequest(profileUser.id);
+          setShowRejectRequestModal(false);
+        }}
+        variant="warning"
+      />
+
+      <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
       {/* Hero Banner */}
       <div className={`relative rounded-3xl overflow-hidden min-h-[300px] md:min-h-[250px] shadow-2xl ${themeMode === 'dark' ? 'border border-white/5' : 'border border-zinc-200'}`}>
         <div 
@@ -840,44 +878,6 @@ const Profile = () => {
 
       </div>
 
-      {/* Modals */}
-      <Modal
-        isOpen={showResetSeasonModal}
-        onClose={() => setShowResetSeasonModal(false)}
-        title="Reset Season"
-        message="ARE YOU SURE? This will reset everyone's points to 1000. This action cannot be undone."
-        confirmText="Reset Season"
-        cancelText="Cancel"
-        onConfirm={confirmResetSeason}
-        variant="danger"
-      />
-      <Modal
-        isOpen={showAcceptRequestModal}
-        onClose={() => setShowAcceptRequestModal(false)}
-        title="Accept Friend Request"
-        message={`Do you want to accept ${profileUser.username}'s friend request?`}
-        confirmText="Accept"
-        cancelText="Cancel"
-        onConfirm={() => {
-          acceptFriendRequest(profileUser.id);
-          setShowAcceptRequestModal(false);
-        }}
-        variant="info"
-      />
-      <Modal
-        isOpen={showRejectRequestModal}
-        onClose={() => setShowRejectRequestModal(false)}
-        title="Reject Friend Request"
-        message={`Do you want to reject ${profileUser.username}'s friend request?`}
-        confirmText="Reject"
-        cancelText="Cancel"
-        onConfirm={() => {
-          rejectFriendRequest(profileUser.id);
-          setShowRejectRequestModal(false);
-        }}
-        variant="warning"
-      />
-
       {/* Badges Section - Larger Size */}
       <Card>
         <div className="text-center mb-6">
@@ -907,7 +907,8 @@ const Profile = () => {
         </div>
       </Card>
 
-    </div>
+      </div>
+    </>
   );
 };
 

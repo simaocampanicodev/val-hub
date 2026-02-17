@@ -23,6 +23,7 @@ const FriendsView = () => {
     : [];
 
   return (
+    <>
     <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8 text-center">
         <h2 className={`text-4xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>FRIENDS</h2>
@@ -151,7 +152,9 @@ const FriendsView = () => {
           </div>
       </div>
 
-      {/* Remove Friend Modal */}
+      </div>
+
+      {/* Remove Friend Modal — fora da div animada para que fixed funcione corretamente */}
       {showRemoveModal && (
         <Modal
           isOpen={!!showRemoveModal}
@@ -169,7 +172,7 @@ const FriendsView = () => {
           variant="warning"
         />
       )}
-    </div>
+    </>
   );
 };
 

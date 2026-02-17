@@ -42,12 +42,12 @@ const Modal: React.FC<ModalProps> = ({
 
   const modalContent = (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[9999] grid place-items-center bg-black/80 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div 
         className={`
-          relative max-w-md w-full rounded-3xl border shadow-2xl
+          relative max-w-md w-full max-h-[90vh] overflow-auto rounded-3xl border shadow-2xl
           ${themeMode === 'dark' ? 'bg-black/90 border-white/10' : 'bg-white border-zinc-200'}
           ${variantColors[variant]}
           animate-in zoom-in duration-200
