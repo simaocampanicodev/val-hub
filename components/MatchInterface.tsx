@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useGame } from '../context/GameContext';
 import { MatchPhase } from '../types';
 import Card from './ui/Card';
@@ -159,37 +160,40 @@ const MatchInterface = () => {
   if (matchState.phase === MatchPhase.READY_CHECK) {
       const hasAccepted = (matchState.readyPlayers || []).includes(currentUser.id);
       const readyCount = matchState.readyPlayers.length;
-      
-      return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
-              <div className="max-w-md w-full p-8 text-center space-y-8 animate-in zoom-in duration-300">
-                  <h1 className="text-5xl font-display font-bold text-white tracking-tighter animate-pulse">MATCH FOUND</h1>
-                  
-                  <div className="flex justify-center space-x-1">
-                      {[...Array(10)].map((_, i) => (
-                          <div 
-                            key={i} 
-                            className={`w-4 h-12 rounded-sm transition-all duration-300 ${i < readyCount ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-zinc-800'}`}
-                          ></div>
-                      ))}
-                  </div>
-                  <p className="text-zinc-400 uppercase tracking-widest">{readyCount} / 10 Players Ready</p>
 
-                  {!hasAccepted ? (
-                      <button 
-                        onClick={acceptMatch}
-                        className="w-full py-6 bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-2xl uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(225,29,72,0.6)] hover:scale-105 transition-all"
-                      >
-                          ACCEPT MATCH
-                      </button>
-                  ) : (
-                      <div className="w-full py-6 bg-zinc-800 text-zinc-500 font-display font-bold text-xl uppercase tracking-widest rounded-2xl border border-white/5 cursor-wait">
-                          Waiting for players...
-                      </div>
-                  )}
+      const readyOverlay = (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/90 backdrop-blur-md p-4">
+          <div className="max-w-md w-full p-8 text-center space-y-8 animate-in zoom-in duration-300 mx-auto">
+            <h1 className="text-5xl font-display font-bold text-white tracking-tighter animate-pulse">MATCH FOUND</h1>
+
+            <div className="flex justify-center space-x-1">
+              {[...Array(10)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-4 h-12 rounded-sm transition-all duration-300 ${i < readyCount ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-zinc-800'}`}
+                ></div>
+              ))}
+            </div>
+
+            <p className="text-zinc-400 uppercase tracking-widest">{readyCount} / 10 Players Ready</p>
+
+            {!hasAccepted ? (
+              <button
+                onClick={acceptMatch}
+                className="w-full py-6 bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-2xl uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(225,29,72,0.6)] hover:scale-105 transition-all"
+              >
+                ACCEPT MATCH
+              </button>
+            ) : (
+              <div className="w-full py-6 bg-zinc-800 text-zinc-500 font-display font-bold text-xl uppercase tracking-widest rounded-2xl border border-white/5 cursor-wait">
+                Waiting for players...
               </div>
+            )}
           </div>
+        </div>
       );
+
+      return createPortal(readyOverlay, document.body);
   }
 
   // --- MAIN LAYOUT ---
