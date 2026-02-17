@@ -1571,13 +1571,23 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const handleBotAction = useCallback(() => {
     if (!matchState) return;
     const captain = matchState.turn === 'A' ? matchState.captainA : matchState.captainB;
-    if (!captain?.isBot) return;
+    
+    console.log(`🤖 Bot action check - Phase: ${matchState.phase}, Turn: ${matchState.turn}, Captain: ${captain?.username}, isBot: ${captain?.isBot}`);
+    
+    if (!captain?.isBot) {
+      console.log(`⏭️ Não é bot, pulando`);
+      return;
+    }
+    
     if (matchState.phase === MatchPhase.DRAFT && matchState.remainingPool.length > 0) {
+      console.log(`🤖 Bot drafting...`);
       draftPlayer(matchState.remainingPool[Math.floor(Math.random() * matchState.remainingPool.length)]);
     } else if (matchState.phase === MatchPhase.VETO && matchState.remainingMaps.length > 0) {
-      vetoMap(matchState.remainingMaps[Math.floor(Math.random() * matchState.remainingMaps.length)]);
+      const mapToVeto = matchState.remainingMaps[Math.floor(Math.random() * matchState.remainingMaps.length)];
+      console.log(`🤖 Bot vetoing map: ${mapToVeto}`);
+      vetoMap(mapToVeto);
     }
-  }, [matchState]);
+  }, [matchState, draftPlayer, vetoMap]);
 
   const markPlayerAsInteracted = useCallback((playerId: string) => {
     setMatchInteractions(prev => prev.includes(playerId) ? prev : [...prev, playerId]);
