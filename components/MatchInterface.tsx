@@ -179,10 +179,10 @@ const MatchInterface = () => {
       'Abusive Voice Chat'
   ];
 
-  // Calculate progress bar for ready check (descending from right to left)
+  // Calculate progress bar for ready check (starts at 100% and decreases from right to left)
   useEffect(() => {
     if (matchState?.phase !== MatchPhase.READY_CHECK || !matchState.readyExpiresAt) {
-      setReadyProgress(0);
+      setReadyProgress(100);
       return;
     }
     
@@ -190,8 +190,8 @@ const MatchInterface = () => {
       const now = Date.now();
       const timeLeft = matchState.readyExpiresAt! - now;
       const totalTime = 60000; // 60 seconds
-      const elapsed = totalTime - timeLeft;
-      const progressPercent = Math.max(0, Math.min(100, (elapsed / totalTime) * 100));
+      // Start at 100% and decrease to 0% as time runs out
+      const progressPercent = Math.max(0, Math.min(100, (timeLeft / totalTime) * 100));
       setReadyProgress(progressPercent);
     };
 
@@ -230,11 +230,11 @@ const MatchInterface = () => {
               backdrop-blur-xl animate-in zoom-in duration-300
             `}
           >
-            {/* Green progress bar at top - descending from right to left */}
-            <div className="h-1.5 bg-zinc-800 w-full">
+            {/* Green progress bar at top - starts full and decreases from right to left */}
+            <div className="h-1.5 bg-zinc-800 w-full relative">
               <div
-                className="h-full bg-emerald-500 transition-all duration-50 ease-linear shadow-[0_0_10px_rgba(16,185,129,0.8)]"
-                style={{ width: `${readyProgress}%`, marginLeft: 'auto' }}
+                className="h-full bg-emerald-500 transition-all duration-50 ease-linear shadow-[0_0_10px_rgba(16,185,129,0.8)] absolute right-0"
+                style={{ width: `${readyProgress}%` }}
               />
             </div>
 
