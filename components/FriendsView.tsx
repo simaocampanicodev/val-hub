@@ -56,9 +56,6 @@ const FriendsView = () => {
                                   <div>
                                       <div className="flex items-center gap-2">
                                           <span className={`font-bold text-sm ${themeMode === 'dark' ? 'text-zinc-200' : 'text-zinc-900'}`}>{friend.username}</span>
-                                          {onlineUserIds?.has(friend.id) && (
-                                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" title="Online" />
-                                          )}
                                       </div>
                                       <span className={`text-[10px] block ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>Lvl {friend.level || 1} • {Math.floor(friend.points)} MMR</span>
                                   </div>
