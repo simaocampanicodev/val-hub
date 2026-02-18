@@ -49,10 +49,10 @@ export const RankRequirementsModal: React.FC<RankRequirementsModalProps> = ({ is
             return (
               <div
                 key={`${rankThreshold.name}-${level}`}
-                className={`p-4 rounded-xl border flex items-center justify-between transition-colors flex-shrink-0 ${
+                className={`p-4 rounded-xl flex items-center justify-between transition-colors flex-shrink-0 ${
                   themeMode === 'dark'
-                    ? 'bg-white/5 border-white/10 hover:bg-white/10'
-                    : 'bg-black/5 border-black/10 hover:bg-black/10'
+                    ? 'bg-white/5 hover:bg-white/10'
+                    : 'bg-black/5 hover:bg-black/10'
                 }`}
               >
                 <div className="flex items-center gap-3 flex-1">
