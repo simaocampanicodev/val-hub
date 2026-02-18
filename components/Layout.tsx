@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { Home, BarChart2, LogOut, History, Moon, Sun, Menu, X, LayoutDashboard, Target, Users, Lightbulb } from 'lucide-react';
@@ -125,13 +124,6 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children }
          </div>
 
          <div className="flex items-center space-x-2 sm:space-x-4">
-             <button 
-                onClick={toggleTheme}
-                className={`p-2 rounded-full transition-colors ${themeMode === 'dark' ? 'bg-white/5 hover:bg-white/10 text-zinc-400' : 'bg-black/5 hover:bg-black/10 text-zinc-600'}`}
-             >
-                {themeMode === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-             </button>
-
              {isAuthenticated && (
                 <>
                     {/* User Profile Area */}

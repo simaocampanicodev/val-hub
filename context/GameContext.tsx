@@ -60,12 +60,10 @@ interface GameContextType {
   forceTimePass: () => void;
   resetSeason: () => Promise<void>;
   themeMode: ThemeMode;
-  toggleTheme: () => void;
   handleBotAction: () => void;
   viewProfileId: string | null;
   setViewProfileId: (id: string | null) => void;
   claimQuestReward: (questId: string) => void;
-  resetDailyQuests: () => void;
   sendFriendRequest: (toId: string) => Promise<void>;
   acceptFriendRequest: (fromId: string) => Promise<void>;
   rejectFriendRequest: (fromId: string) => Promise<void>;
@@ -102,7 +100,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [matchState, setMatchState] = useState<MatchState | null>(null);
   const [matchHistory, setMatchHistory] = useState<MatchRecord[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
-  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
+  const [themeMode] = useState<ThemeMode>('dark');
   const [viewProfileId, setViewProfileId] = useState<string | null>(null);
   const [matchInteractions, setMatchInteractions] = useState<string[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -1424,9 +1422,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     }
 
-    // Se já existe consenso no servidor e a match ainda não foi marcada como finalizada, finalizar
+    // Se já existe consenso no servidor e a match ainda não foi marcada como finalizada, evitar duplicar finalização
     if (consensusResult) {
-      // Evitar duplicar finalização — verificar flag no servidor
       if (serverData.resultReported) {
         console.log('⚠️ Consenso detectado mas match já marcada como finalizada no servidor.');
         return { success: true, message: 'Result verified (already finalized).' };
@@ -1645,9 +1642,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     showToast("Season Reset!", 'success');
   };
 
-  const toggleTheme = () => setThemeMode(prev => prev === 'dark' ? 'light' : 'dark');
-  const resetDailyQuests = () => generateQuestsIfNeeded(true);
-  
   const handleBotAction = useCallback(() => {
     if (!matchState) return;
     const captain = matchState.turn === 'A' ? matchState.captainA : matchState.captainB;
@@ -1721,8 +1715,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       createTestMatchDirect, exitMatchToLobby,
       matchState, acceptMatch, draftPlayer, vetoMap, reportResult, sendChatMessage,
       matchHistory, allUsers, reports, submitReport, commendPlayer, resetMatch,
-      forceTimePass, resetSeason, themeMode, toggleTheme, handleBotAction,
-      viewProfileId, setViewProfileId, claimQuestReward, resetDailyQuests,
+      forceTimePass, resetSeason, themeMode, handleBotAction,
+      viewProfileId, setViewProfileId, claimQuestReward,
       sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
       matchInteractions, markPlayerAsInteracted,
       showToast, removeToast, toasts,
