@@ -35,6 +35,7 @@ const MatchInterface = () => {
   const [localMatchCode, setLocalMatchCode] = useState('');
   const [matchPanelOpen, setMatchPanelOpen] = useState(false);
   const [showCreatingMatch, setShowCreatingMatch] = useState(false);
+  const [showWinningMapPhase, setShowWinningMapPhase] = useState<'none' | 'highlight' | 'creating'>('none');
   const [readyProgress, setReadyProgress] = useState(0);
 
   useEffect(() => {
@@ -200,21 +201,26 @@ const MatchInterface = () => {
     return () => clearInterval(interval);
   }, [matchState?.phase, matchState?.readyExpiresAt]);
 
-  // Show "Creating match..." when only one map remains in veto phase
+  // Winning map flow: 2s highlight (green border + checkmark), then "Creating match..." overlay
   useEffect(() => {
-    if (matchState?.phase === MatchPhase.VETO) {
-      const isLastMap = matchState.remainingMaps.length === 1;
-      const winningMap = isLastMap ? matchState.remainingMaps[0] : null;
-      
-      if (isLastMap && winningMap && !showCreatingMatch) {
-        setShowCreatingMatch(true);
-      } else if (!isLastMap) {
-        setShowCreatingMatch(false);
-      }
-    } else {
+    if (matchState?.phase !== MatchPhase.VETO) {
+      setShowWinningMapPhase('none');
       setShowCreatingMatch(false);
+      return;
     }
-  }, [matchState?.phase, matchState?.remainingMaps, showCreatingMatch]);
+    const isLastMap = matchState.remainingMaps.length === 1;
+    if (!isLastMap) {
+      setShowWinningMapPhase('none');
+      setShowCreatingMatch(false);
+      return;
+    }
+    setShowWinningMapPhase('highlight');
+    const t = setTimeout(() => {
+      setShowWinningMapPhase('creating');
+      setShowCreatingMatch(true);
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [matchState?.phase, matchState?.remainingMaps?.length]);
 
   // --- READY CHECK PHASE (centered modal, larger and more visible) ---
   if (matchState.phase === MatchPhase.READY_CHECK) {
@@ -458,8 +464,8 @@ const MatchInterface = () => {
 
                 return (
                     <div className="h-full flex flex-col animate-in fade-in duration-500 overflow-hidden">
-                        {/* "Creating match..." overlay when last map is selected */}
-                        {showCreatingMatch && winningMap && (
+                        {/* "Creating match..." overlay – shown 2s after map highlight */}
+                        {showWinningMapPhase === 'creating' && showCreatingMatch && winningMap && (
                             <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
                                 <div className="text-center space-y-6">
                                     <div className="relative">
@@ -503,28 +509,30 @@ const MatchInterface = () => {
                                     const bannedInfo = bannedMaps.find(b => b.map === map);
                                     const isBanned = !!bannedInfo;
                                     const isRemaining = matchState.remainingMaps.includes(map);
-                                    const isWinning = map === winningMap;
+                                    const isWinning = map === winningMap && (showWinningMapPhase === 'highlight' || showWinningMapPhase === 'creating');
 
                                     return (
                                         <div
                                             key={map}
                                             className={`
-                                                relative group overflow-hidden rounded-xl border transition-all duration-300
+                                                relative group overflow-hidden rounded-xl border-2 transition-all duration-300
                                                 aspect-[16/9] flex flex-col items-center justify-center
                                                 ${isBanned 
-                                                    ? 'border-red-500/50 opacity-60 cursor-not-allowed grayscale' 
+                                                    ? 'border-red-500 bg-red-950/50 cursor-not-allowed grayscale shadow-[inset_0_0_0_2px_rgba(239,68,68,0.5)]' 
                                                     : isWinning
-                                                    ? 'border-emerald-500 ring-4 ring-emerald-500/50 cursor-default'
+                                                    ? 'border-emerald-500 ring-4 ring-emerald-500/50 cursor-default shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-in zoom-in duration-300'
                                                     : isMyTurn && isRemaining
-                                                    ? 'border-zinc-500/20 hover:border-red-500 hover:scale-105 cursor-pointer shadow-lg'
-                                                    : 'opacity-40 grayscale cursor-not-allowed border-transparent'}
+                                                    ? 'border-zinc-500/30 hover:border-red-500 hover:scale-105 cursor-pointer shadow-lg'
+                                                    : isRemaining
+                                                    ? 'border-zinc-500/20 opacity-70 cursor-not-allowed'
+                                                    : 'border-transparent opacity-40 cursor-not-allowed'}
                                             `}
                                         >
                                             {!isBanned && isRemaining && (
                                                 <button
                                                     disabled={!isMyTurn}
                                                     onClick={() => vetoMap(map)}
-                                                    className="absolute inset-0 w-full h-full"
+                                                    className="absolute inset-0 w-full h-full z-10"
                                                 />
                                             )}
                                             
@@ -532,29 +540,32 @@ const MatchInterface = () => {
                                                 src={MAP_IMAGES[map]} 
                                                 alt={map}
                                                 className={`absolute inset-0 w-full h-full object-cover transition-opacity ${
-                                                    isBanned ? 'opacity-30' : isWinning ? 'opacity-80' : 'opacity-60 group-hover:opacity-40'
+                                                    isBanned ? 'opacity-25' : isWinning ? 'opacity-85' : 'opacity-60 group-hover:opacity-40'
                                                 }`}
                                             />
                                             <div className={`absolute inset-0 transition-colors ${
                                                 isBanned 
-                                                    ? 'bg-red-900/80' 
+                                                    ? 'bg-red-900/85' 
                                                     : isWinning
-                                                    ? 'bg-emerald-900/40'
+                                                    ? 'bg-emerald-900/30'
                                                     : 'bg-black/60 group-hover:bg-red-900/60'
                                             }`}></div>
 
                                             <div className="relative z-10 flex flex-col items-center px-2">
                                                 {isWinning ? (
                                                     <>
-                                                        <Check className="w-8 h-8 mb-1 text-emerald-400 animate-pulse" />
-                                                        <span className="text-xs font-display tracking-widest uppercase font-bold text-white shadow-black drop-shadow-md text-center">{map}</span>
+                                                        <Check className="w-10 h-10 mb-1 text-emerald-400 animate-pulse drop-shadow-lg" />
+                                                        <span className="text-sm font-display tracking-widest uppercase font-bold text-white shadow-black drop-shadow-md text-center">{map}</span>
+                                                        <span className="text-[10px] text-emerald-300 mt-0.5 uppercase font-bold">Selected</span>
                                                     </>
                                                 ) : isBanned ? (
                                                     <>
-                                                        <Ban className="w-6 h-6 mb-1 text-red-400" />
+                                                        <div className="absolute top-1 left-1 right-1 h-5 bg-red-600/90 flex items-center justify-center rounded">
+                                                            <span className="text-[10px] font-bold text-white uppercase tracking-wider">BANNED</span>
+                                                        </div>
+                                                        <Ban className="w-8 h-8 mb-1 text-red-400 drop-shadow-lg" />
                                                         <span className="text-xs font-display tracking-widest uppercase font-bold text-white shadow-black drop-shadow-md text-center">{map}</span>
-                                                        <span className="text-[10px] text-red-300 mt-1 text-center">BANNED</span>
-                                                        <span className="text-[9px] text-zinc-400 mt-0.5 text-center">by {bannedInfo.bannedByName}</span>
+                                                        <span className="text-[10px] text-red-300 mt-1 text-center font-medium">by {bannedInfo.bannedByName}</span>
                                                     </>
                                                 ) : (
                                                     <>
@@ -1109,7 +1120,7 @@ const MatchInterface = () => {
                     <h3 className="text-xs font-bold uppercase tracking-widest">Lobby Chat</h3>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 lobby-chat-scroll">
                     {matchState.chat.map(msg => (
                         <div key={msg.id} className={`flex flex-col ${msg.isSystem ? 'items-center' : (msg.senderId === currentUser.id ? 'items-end' : 'items-start')}`}>
                             {msg.isSystem ? (
