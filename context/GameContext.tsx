@@ -292,13 +292,26 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log(`  💰 Points Changes: ${playerPointsChanges.length}`);
         currentMatchIdRef.current = userMatch.id;
         const playersData = userMatch.playersData || {};
-        const resolveMatchUser = (id: string) =>
-          allUsersRef.current.find(u => u.id === id) || botUsersRef.current.find(u => u.id === id) || null;
-        const players = userMatch.players.map((id: string) =>
-          resolveMatchUser(id) || { ...initialUser, id, username: playersData[id]?.username || 'Unknown' }
-        );
+        const resolveMatchUser = (id: string): User => {
+          const fromRef = allUsersRef.current.find(u => u.id === id) || botUsersRef.current.find(u => u.id === id);
+          if (fromRef) return fromRef;
+          const data = playersData[id];
+          if (data) {
+            return {
+              ...initialUser,
+              id,
+              username: data.username || 'Unknown',
+              primaryRole: (data.primaryRole as GameRole) || initialUser.primaryRole,
+              points: typeof data.points === 'number' ? data.points : initialUser.points,
+              isBot: !!data.isBot,
+              avatarUrl: data.avatarUrl ?? undefined
+            };
+          }
+          return { ...initialUser, id, username: 'Unknown' };
+        };
+        const players = userMatch.players.map((id: string) => resolveMatchUser(id));
         const getUser = (id: string) => resolveMatchUser(id);
-        const getUserArray = (ids: string[]) => (ids || []).map(id => getUser(id)).filter(Boolean) as User[];
+        const getUserArray = (ids: string[]) => (ids || []).map(id => resolveMatchUser(id)).filter(Boolean) as User[];
         setMatchState({
           id: userMatch.id,
           phase: userMatch.phase as MatchPhase,
@@ -546,7 +559,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           username: p.username,
           avatarUrl: p.avatarUrl || null, // ✅ CORRIGIDO: Firestore não aceita undefined
           primaryRole: p.primaryRole,
-          points: p.points
+          points: p.points,
+          isBot: !!p.isBot
         };
       });
       
@@ -1186,7 +1200,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           username: p.username,
           avatarUrl: p.avatarUrl || null,
           primaryRole: p.primaryRole,
-          points: p.points
+          points: p.points,
+          isBot: !!p.isBot
         };
       });
 
@@ -1295,59 +1310,78 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const draftPlayer = async (player: User) => {
     if (!matchState || matchState.phase !== MatchPhase.DRAFT) return;
     const isTeamA = matchState.turn === 'A';
-    const newTeamA = isTeamA ? [...matchState.teamA.map(u => u.id), player.id] : matchState.teamA.map(u => u.id);
-    const newTeamB = !isTeamA ? [...matchState.teamB.map(u => u.id), player.id] : matchState.teamB.map(u => u.id);
-    const newPool = matchState.remainingPool.filter(p => p.id !== player.id).map(p => p.id);
-    console.log(`👥 ${player.username} draftado para Team ${isTeamA ? 'A' : 'B'}`);
-    await updateMatch({
+    const newTeamAIds = isTeamA ? [...matchState.teamA.map(u => u.id), player.id] : matchState.teamA.map(u => u.id);
+    const newTeamBIds = !isTeamA ? [...matchState.teamB.map(u => u.id), player.id] : matchState.teamB.map(u => u.id);
+    const newPoolIds = matchState.remainingPool.filter(p => p.id !== player.id).map(p => p.id);
+    const newTurn = isTeamA ? 'B' : 'A';
+    const newPhase = newPoolIds.length === 0 ? MatchPhase.VETO : MatchPhase.DRAFT;
+    const newChatEntry = {
+      id: `sys-draft-${Date.now()}`,
+      senderId: 'system',
+      senderName: 'System',
+      text: `${player.username} drafted to Team ${isTeamA ? 'A' : 'B'}`,
+      timestamp: Date.now(),
+      isSystem: true as const
+    };
+    const newTeamA = isTeamA ? [...matchState.teamA, player] : matchState.teamA;
+    const newTeamB = !isTeamA ? [...matchState.teamB, player] : matchState.teamB;
+    const newPool = matchState.remainingPool.filter(p => p.id !== player.id);
+    setMatchState(prev => prev ? {
+      ...prev,
       teamA: newTeamA,
       teamB: newTeamB,
       remainingPool: newPool,
-      turn: isTeamA ? 'B' : 'A',
-      phase: newPool.length === 0 ? MatchPhase.VETO : MatchPhase.DRAFT,
-      chat: [...matchState.chat, {
-        id: `sys-draft-${Date.now()}`,
-        senderId: 'system',
-        senderName: 'System',
-        text: `${player.username} drafted to Team ${isTeamA ? 'A' : 'B'}`,
-        timestamp: Date.now(),
-        isSystem: true
-      }]
+      turn: newTurn,
+      phase: newPhase,
+      chat: [...prev.chat, newChatEntry]
+    } : null);
+    console.log(`👥 ${player.username} draftado para Team ${isTeamA ? 'A' : 'B'}`);
+    await updateMatch({
+      teamA: newTeamAIds,
+      teamB: newTeamBIds,
+      remainingPool: newPoolIds,
+      turn: newTurn,
+      phase: newPhase,
+      chat: [...matchState.chat, newChatEntry]
     });
   };
 
   const vetoMap = async (map: GameMap) => {
     if (!matchState || matchState.phase !== MatchPhase.VETO) return;
     const newMaps = matchState.remainingMaps.filter(m => m !== map);
-    const currentTeam = matchState.turn === 'A' ? matchState.captainA : matchState.captainB;
     const bannedMaps = matchState.bannedMaps || [];
-    
-    console.log(`🗺️ Mapa ${map} banido por ${currentUser.username}`);
-    
     const newBannedMap = {
       map,
       bannedBy: currentUser.id,
       bannedByName: currentUser.username,
       team: matchState.turn
     };
-    
+    const newChatEntry = {
+      id: `sys-veto-${Date.now()}`,
+      senderId: 'system',
+      senderName: 'System',
+      text: `Map ${map} banned by ${currentUser.username}`,
+      timestamp: Date.now(),
+      isSystem: true as const
+    };
+    const newTurn = newMaps.length === 1 ? matchState.turn : (matchState.turn === 'A' ? 'B' : 'A');
+    setMatchState(prev => prev ? {
+      ...prev,
+      remainingMaps: newMaps,
+      bannedMaps: [...bannedMaps, newBannedMap],
+      turn: newTurn,
+      selectedMap: newMaps.length === 1 ? newMaps[0] : prev.selectedMap,
+      chat: [...prev.chat, newChatEntry]
+    } : null);
+    console.log(`🗺️ Mapa ${map} banido por ${currentUser.username}`);
     const updates: any = {
       remainingMaps: newMaps,
       bannedMaps: [...bannedMaps, newBannedMap],
-      chat: [...matchState.chat, {
-        id: `sys-veto-${Date.now()}`,
-        senderId: 'system',
-        senderName: 'System',
-        text: `Map ${map} banned by ${currentUser.username}`,
-        timestamp: Date.now(),
-        isSystem: true
-      }]
+      chat: [...matchState.chat, newChatEntry]
     };
-    
     if (newMaps.length === 1) {
       console.log(`🗺️ Mapa final: ${newMaps[0]}`);
       updates.selectedMap = newMaps[0];
-      // Wait 3 seconds before going to LIVE phase
       await updateMatch(updates);
       setTimeout(async () => {
         await updateMatch({
@@ -1364,7 +1398,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
       }, 3000);
     } else {
-      updates.turn = matchState.turn === 'A' ? 'B' : 'A';
+      updates.turn = newTurn;
       await updateMatch(updates);
     }
   };
