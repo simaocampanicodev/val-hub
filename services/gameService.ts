@@ -2,7 +2,20 @@
 import { User, GameRole } from '../types';
 import { RANK_THRESHOLDS, AGENTS } from '../constants';
 
-export const getRankInfo = (points: number) => {
+/**
+ * Returns rank info by points. If leaderboardPosition is 1, 2, or 3 and points >= 2001, returns "Top 3" (Level 10).
+ */
+export const getRankInfo = (points: number, leaderboardPosition?: number) => {
+  const isTop3 = leaderboardPosition != null && leaderboardPosition >= 1 && leaderboardPosition <= 3;
+  if (isTop3 && points >= 2001) {
+    const top3Rank = RANK_THRESHOLDS[RANK_THRESHOLDS.length - 1];
+    return {
+      ...top3Rank,
+      name: 'Top 3',
+      min: top3Rank.min,
+      max: top3Rank.max || Infinity
+    };
+  }
   let rank = RANK_THRESHOLDS[0];
   for (let i = RANK_THRESHOLDS.length - 1; i >= 0; i--) {
     if (points >= RANK_THRESHOLDS[i].min) {
@@ -10,7 +23,10 @@ export const getRankInfo = (points: number) => {
       break;
     }
   }
-  // Return rank with min/max for display
+  // Level 10 "Top 3" is positional only; by points we show Radiant for 2001+
+  if (rank.level === 10 && !isTop3) {
+    rank = RANK_THRESHOLDS[RANK_THRESHOLDS.length - 2]; // Radiant (level 9)
+  }
   return {
     ...rank,
     min: rank.min,

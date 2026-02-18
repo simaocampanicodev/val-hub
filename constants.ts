@@ -127,7 +127,7 @@ export const RANK_THRESHOLDS = [
   { name: 'Ascendant', min: 1351, max: 1530, color: '#34d399', level: 7 }, // Level 7
   { name: 'Immortal', min: 1531, max: 1750, color: '#f87171', level: 8 }, // Level 8
   { name: 'Radiant', min: 1751, max: 2000, color: '#fef08a', level: 9 }, // Level 9
-  { name: 'Radiant', min: 2001, max: Infinity, color: '#fef08a', level: 10 }, // Level 10 (same name as Level 9)
+  { name: 'Top 3', min: 2001, max: Infinity, color: '#fef08a', level: 10 }, // Level 10 – only top 3 players by MMR
 ];
 
 export const QUEST_POOL: Quest[] = [

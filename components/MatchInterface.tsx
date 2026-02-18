@@ -216,52 +216,60 @@ const MatchInterface = () => {
     }
   }, [matchState?.phase, matchState?.remainingMaps, showCreatingMatch]);
 
-  // --- READY CHECK PHASE ---
+  // --- READY CHECK PHASE (toast style: same as friend-removed toast, bar on top of toast) ---
   if (matchState.phase === MatchPhase.READY_CHECK) {
       const hasAccepted = (matchState.readyPlayers || []).includes(currentUser.id);
       const readyCount = matchState.readyPlayers.length;
 
-      const readyOverlay = (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-500">
-          {/* Green progress bar at top - descending from right to left */}
-          <div className="fixed top-0 left-0 right-0 h-1 bg-zinc-800 z-50">
-            <div 
-              className="h-full bg-emerald-500 transition-all duration-50 ease-linear shadow-[0_0_10px_rgba(16,185,129,0.8)]"
-              style={{ width: `${readyProgress}%`, marginLeft: 'auto' }}
-            />
-          </div>
-
-          <div className="max-w-md w-full p-8 text-center space-y-8 animate-in zoom-in duration-300 mx-auto">
-            <h1 className="text-5xl font-display font-bold text-white tracking-tighter animate-pulse">MATCH FOUND</h1>
-
-            <div className="flex justify-center space-x-1">
-              {[...Array(10)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-4 h-12 rounded-sm transition-all duration-300 ${i < readyCount ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : 'bg-zinc-800'}`}
-                ></div>
-              ))}
+      const readyToast = (
+        <div className="fixed bottom-4 right-4 z-50 pointer-events-auto animate-in fade-in slide-in-from-right-4 duration-300">
+          <div
+            className={`
+              min-w-[320px] max-w-[400px] rounded-xl border shadow-lg overflow-hidden
+              ${themeMode === 'dark' ? 'bg-black/40 border-white/10' : 'bg-white/60 border-black/10'}
+              backdrop-blur-xl
+            `}
+          >
+            {/* Green progress bar at top of toast - descending from right to left */}
+            <div className="h-1 bg-zinc-800 w-full">
+              <div
+                className="h-full bg-emerald-500 transition-all duration-50 ease-linear shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+                style={{ width: `${readyProgress}%`, marginLeft: 'auto' }}
+              />
             </div>
 
-            <p className="text-zinc-400 uppercase tracking-widest">{readyCount} / 10 Players Ready</p>
+            <div className="p-4 space-y-4">
+              <h2 className="text-xl font-display font-bold text-white tracking-tight">MATCH FOUND</h2>
 
-            {!hasAccepted ? (
-              <button
-                onClick={acceptMatch}
-                className="w-full py-6 bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-2xl uppercase tracking-widest rounded-2xl shadow-[0_0_30px_rgba(225,29,72,0.6)] hover:scale-105 transition-all"
-              >
-                ACCEPT MATCH
-              </button>
-            ) : (
-              <div className="w-full py-6 bg-zinc-800 text-zinc-500 font-display font-bold text-xl uppercase tracking-widest rounded-2xl border border-white/5 cursor-wait">
-                Waiting for players...
+              <div className="flex justify-center space-x-1">
+                {[...Array(10)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-3 h-8 rounded-sm transition-all duration-300 ${i < readyCount ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]' : 'bg-zinc-800'}`}
+                  />
+                ))}
               </div>
-            )}
+
+              <p className="text-zinc-400 uppercase tracking-widest text-xs text-center">{readyCount} / 10 Players Ready</p>
+
+              {!hasAccepted ? (
+                <button
+                  onClick={acceptMatch}
+                  className="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-sm uppercase tracking-widest rounded-xl shadow-lg hover:scale-[1.02] transition-all"
+                >
+                  ACCEPT MATCH
+                </button>
+              ) : (
+                <div className="w-full py-4 bg-zinc-800 text-zinc-500 font-display font-bold text-sm uppercase tracking-widest rounded-xl border border-white/5 cursor-wait text-center">
+                  Waiting for players...
+                </div>
+              )}
+            </div>
           </div>
         </div>
       );
 
-      return createPortal(readyOverlay, document.body);
+      return createPortal(readyToast, document.body);
   }
 
   // --- MAIN LAYOUT ---

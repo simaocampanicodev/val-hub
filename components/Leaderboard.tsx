@@ -1,12 +1,14 @@
-
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { getRankInfo } from '../services/gameService';
 import Card from './ui/Card';
+import { RankRequirementsModal } from './RankRequirementsModal';
+import { Info } from 'lucide-react';
 
 const Leaderboard = () => {
   const { allUsers, themeMode, setViewProfileId } = useGame();
   const [sortBy, setSortBy] = useState<'mmr' | 'level'>('mmr');
+  const [showRankInfoModal, setShowRankInfoModal] = useState(false);
   
   // Filter out bots and sort
   const sortedUsers = [...allUsers]
@@ -24,6 +26,20 @@ const Leaderboard = () => {
 
   return (
     <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Fixed centered button: how points work (stays centered regardless of scroll) */}
+      <div className="fixed top-24 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex justify-center">
+        <button
+          onClick={() => setShowRankInfoModal(true)}
+          className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-xl border backdrop-blur-xl shadow-lg text-sm font-medium transition-colors bg-rose-500/20 border-rose-500/30 text-rose-300 hover:bg-rose-500/30 hover:border-rose-500/50"
+          title="View rank requirements"
+        >
+          <Info className="w-4 h-4" />
+          How points work
+        </button>
+      </div>
+
+      <RankRequirementsModal isOpen={showRankInfoModal} onClose={() => setShowRankInfoModal(false)} themeMode={themeMode} />
+
       <div className="mb-8 text-center">
         <h2 className={`text-4xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>RANKINGS</h2>
         <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">Top Rated Players</p>
@@ -59,7 +75,8 @@ const Leaderboard = () => {
             </thead>
             <tbody className={`divide-y ${themeMode === 'dark' ? 'divide-white/5' : 'divide-black/5'}`}>
                 {sortedUsers.map((user, index) => {
-                    const rankInfo = getRankInfo(user.points);
+                    const position = index + 1;
+                    const rankInfo = getRankInfo(user.points, position);
                     return (
                         <tr 
                             key={user.id} 
