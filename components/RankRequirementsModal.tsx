@@ -30,17 +30,17 @@ export const RankRequirementsModal: React.FC<RankRequirementsModalProps> = ({ is
       onClick={onClose}
     >
       <Card
-        className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rank-modal-scroll animate-in zoom-in duration-200 flex flex-col"
+        className="w-full max-w-2xl animate-in zoom-in duration-200 flex flex-col"
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-6 flex-shrink-0">
-          <h3 className="text-2xl font-display font-bold text-white">Rank Requirements</h3>
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
+          <h3 className="text-xl font-display font-bold text-white">Rank Requirements</h3>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors p-1">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="space-y-3 flex-1 min-h-0">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {RANKS_DESC.map((rankThreshold, index) => {
             const level = rankThreshold.level ?? (RANK_THRESHOLDS.length - index);
             const maxDisplay = rankThreshold.max === Infinity ? '2000+' : rankThreshold.max;
@@ -49,35 +49,39 @@ export const RankRequirementsModal: React.FC<RankRequirementsModalProps> = ({ is
             return (
               <div
                 key={`${rankThreshold.name}-${level}`}
-                className={`p-4 rounded-xl flex items-center justify-between transition-colors flex-shrink-0 ${
+                className={`p-2.5 rounded-lg flex items-center gap-2 transition-colors ${
                   themeMode === 'dark'
                     ? 'bg-white/5 hover:bg-white/10'
                     : 'bg-black/5 hover:bg-black/10'
                 }`}
               >
-                <div className="flex items-center gap-3 flex-1">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center border-2 font-bold text-white text-sm flex-shrink-0"
-                    style={{
-                      backgroundColor: `${rankThreshold.color}20`,
-                      borderColor: rankThreshold.color,
-                      color: rankThreshold.color
-                    }}
-                  >
-                    {level}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-white">
-                      {rankThreshold.name} {level === 10 ? '(Level 10)' : ''}
-                    </h4>
-                    <p className="text-xs text-zinc-400">
-                      {minDisplay} - {maxDisplay} points
-                    </p>
-                  </div>
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center border-2 font-bold text-white text-xs flex-shrink-0"
+                  style={{
+                    backgroundColor: `${rankThreshold.color}20`,
+                    borderColor: rankThreshold.color,
+                    color: rankThreshold.color
+                  }}
+                >
+                  {level}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-bold text-white text-sm truncate">
+                    {rankThreshold.name} {level === 10 ? '(L10)' : ''}
+                  </h4>
+                  <p className="text-[10px] text-zinc-400 leading-tight">
+                    {minDisplay} – {maxDisplay} pts
+                  </p>
                 </div>
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-white/10 flex-shrink-0">
+          <p className="text-[10px] text-zinc-400 text-center leading-tight">
+            Points from match results. Winstreaks add bonus. Top 3 = top 3 players by MMR only.
+          </p>
         </div>
       </Card>
     </div>
