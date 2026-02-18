@@ -1,5 +1,6 @@
-import React from 'react';
-import { X, Crown } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { X } from 'lucide-react';
 import Card from './ui/Card';
 import { RANK_THRESHOLDS } from '../constants';
 import type { ThemeMode } from '../types';
@@ -10,42 +11,45 @@ interface RankRequirementsModalProps {
   themeMode: ThemeMode;
 }
 
+/** Ranks from highest (Top 3) to lowest (Iron) */
+const RANKS_DESC = [...RANK_THRESHOLDS].reverse();
+
 export const RankRequirementsModal: React.FC<RankRequirementsModalProps> = ({ isOpen, onClose, themeMode }) => {
+  useEffect(() => {
+    if (isOpen) document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar animate-in zoom-in duration-200">
-        <div className="flex justify-between items-center mb-6">
+  const modal = (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <Card
+        className="w-full max-w-2xl max-h-[85vh] overflow-y-auto custom-scrollbar animate-in zoom-in duration-200 flex flex-col"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center mb-6 flex-shrink-0">
           <h3 className="text-2xl font-display font-bold text-white">Rank Requirements</h3>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors p-1">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="space-y-3">
-          <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/10">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center border-2 border-red-500/50">
-                <Crown className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <h4 className="font-bold text-white text-lg">Challenger Top 1,000</h4>
-                <p className="text-xs text-zinc-400">Top 1,000 players globally</p>
-              </div>
-            </div>
-          </div>
-
-          {RANK_THRESHOLDS.map((rankThreshold, index) => {
-            const level = rankThreshold.level ?? index + 1;
-            const isLast = index === RANK_THRESHOLDS.length - 1;
-            const maxDisplay = isLast ? '2000+' : (rankThreshold.max === Infinity ? '∞' : rankThreshold.max);
+        <div className="space-y-3 flex-1 min-h-0">
+          {RANKS_DESC.map((rankThreshold, index) => {
+            const level = rankThreshold.level ?? (RANK_THRESHOLDS.length - index);
+            const maxDisplay = rankThreshold.max === Infinity ? '2000+' : rankThreshold.max;
             const minDisplay = rankThreshold.min === 0 ? '0' : rankThreshold.min;
 
             return (
               <div
-                key={index}
-                className={`p-4 rounded-xl border flex items-center justify-between transition-colors ${
+                key={`${rankThreshold.name}-${level}`}
+                className={`p-4 rounded-xl border flex items-center justify-between transition-colors flex-shrink-0 ${
                   themeMode === 'dark'
                     ? 'bg-white/5 border-white/10 hover:bg-white/10'
                     : 'bg-black/5 border-black/10 hover:bg-black/10'
@@ -53,7 +57,7 @@ export const RankRequirementsModal: React.FC<RankRequirementsModalProps> = ({ is
               >
                 <div className="flex items-center gap-3 flex-1">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center border-2 font-bold text-white text-sm"
+                    className="w-10 h-10 rounded-full flex items-center justify-center border-2 font-bold text-white text-sm flex-shrink-0"
                     style={{
                       backgroundColor: `${rankThreshold.color}20`,
                       borderColor: rankThreshold.color,
@@ -62,7 +66,7 @@ export const RankRequirementsModal: React.FC<RankRequirementsModalProps> = ({ is
                   >
                     {level}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-white">
                       {rankThreshold.name} {level === 10 ? '(Level 10)' : ''}
                     </h4>
@@ -76,7 +80,7 @@ export const RankRequirementsModal: React.FC<RankRequirementsModalProps> = ({ is
           })}
         </div>
 
-        <div className="mt-6 pt-4 border-t border-white/10">
+        <div className="mt-6 pt-4 border-t border-white/10 flex-shrink-0">
           <p className="text-xs text-zinc-400 text-center">
             Points are gained/lost based on match results. Winstreaks provide bonus points. Top 3 rank is for the top 3 players by MMR only.
           </p>
@@ -84,6 +88,8 @@ export const RankRequirementsModal: React.FC<RankRequirementsModalProps> = ({ is
       </Card>
     </div>
   );
+
+  return createPortal(modal, document.body);
 };
 
 export default RankRequirementsModal;
