@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useGame } from '../context/GameContext';
@@ -574,19 +573,8 @@ const MatchInterface = () => {
 
                                     {/* Code Input/Display - lobby code centered, save/copy icons to the right */}
                                     {isCaptain ? (
-                                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 w-full max-w-md mx-auto">
-                                            <div />
-                                            <input
-                                                type="text"
-                                                value={localMatchCode}
-                                                onChange={(e) => {
-                                                  const filtered = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-                                                  setLocalMatchCode(filtered);
-                                                }}
-                                                placeholder="Lobby code"
-                                                className="w-[220px] bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-base text-white outline-none focus:border-emerald-400 font-mono tracking-[0.25em] text-center"
-                                            />
-                                            <div className="flex items-center justify-end gap-2">
+                                        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3 w-full max-w-md mx-auto">
+                                            <div className="flex items-center justify-start gap-2">
                                                 <button
                                                     type="button"
                                                     aria-label="Save match code"
@@ -595,20 +583,32 @@ const MatchInterface = () => {
                                                         const trimmed = localMatchCode.trim().toUpperCase();
                                                         if (!trimmed || !matchState?.id) return;
                                                         try {
-                                                          if ((matchState.matchCode || '').trim() !== trimmed) {
-                                                            await updateDoc(doc(db, 'active_matches', matchState.id), { matchCode: trimmed });
-                                                          }
-                                                          setLocalMatchCode(trimmed);
-                                                          showToast('Match code saved', 'success');
+                                                            if ((matchState.matchCode || '').trim() !== trimmed) {
+                                                                await updateDoc(doc(db, 'active_matches', matchState.id), { matchCode: trimmed });
+                                                            }
+                                                            setLocalMatchCode(trimmed);
+                                                            showToast('Match code saved', 'success');
                                                         } catch (e) {
-                                                          console.warn('Failed to save match code', e);
-                                                          showToast('Failed to save match code', 'error');
+                                                            console.warn('Failed to save match code', e);
+                                                            showToast('Failed to save match code', 'error');
                                                         }
                                                     }}
                                                     className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 grid place-items-center"
                                                 >
                                                     <Save className="w-4 h-4 text-zinc-200" />
                                                 </button>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={localMatchCode}
+                                                onChange={(e) => {
+                                                    const filtered = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                                                    setLocalMatchCode(filtered);
+                                                }}
+                                                placeholder="Lobby code"
+                                                className="w-[220px] bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-base text-white outline-none focus:border-emerald-400 font-mono tracking-[0.25em] text-center"
+                                            />
+                                            <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     type="button"
                                                     aria-label="Copy match code"
@@ -617,10 +617,10 @@ const MatchInterface = () => {
                                                         const code = (localMatchCode || matchState.matchCode || '').trim();
                                                         if (!code) return;
                                                         try {
-                                                          await navigator.clipboard.writeText(code);
-                                                          showToast('Match code copied to clipboard', 'success');
+                                                            await navigator.clipboard.writeText(code);
+                                                            showToast('Match code copied to clipboard', 'success');
                                                         } catch {
-                                                          showToast('Failed to copy match code', 'error');
+                                                            showToast('Failed to copy match code', 'error');
                                                         }
                                                     }}
                                                     className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 grid place-items-center"
@@ -643,10 +643,10 @@ const MatchInterface = () => {
                                                 onClick={async () => {
                                                     if (!matchState.matchCode) return;
                                                     try {
-                                                      await navigator.clipboard.writeText(matchState.matchCode);
-                                                      showToast('Match code copied to clipboard', 'success');
+                                                        await navigator.clipboard.writeText(matchState.matchCode);
+                                                        showToast('Match code copied to clipboard', 'success');
                                                     } catch {
-                                                      showToast('Failed to copy match code', 'error');
+                                                        showToast('Failed to copy match code', 'error');
                                                     }
                                                 }}
                                                 className={`w-10 h-10 rounded-xl border grid place-items-center transition-colors justify-self-end ${
@@ -844,132 +844,32 @@ const MatchInterface = () => {
                                 );
                             })()}
 
-                            <p className="text-2xl text-zinc-400 font-bold tracking-widest">WINNER: TEAM {matchState.winner === 'A' ? matchState.captainA?.username.toUpperCase() : matchState.captainB?.username.toUpperCase()}</p>
+                            <p className="text-2xl text-zinc-400 font-bold tracking-widest">WINNER: TEAM {matchState.winner === 'A' ? matchState.captainA?.username.toUpperCase() : matchState.winner === 'B' ? matchState.captainB?.username.toUpperCase() : 'N/A'}</p>
                             <div className="mt-6 text-6xl font-mono font-bold text-white bg-white/5 px-8 py-4 rounded-3xl border border-white/10">
                                 {matchState.reportA ? `${matchState.reportA.scoreA} - ${matchState.reportA.scoreB}` : ''}
                             </div>
                         </div>
-
-                        {/* Points Breakdown + Commend/Report - teams left/right, inline actions */}
-                        {matchState.playerPointsChanges && matchState.playerPointsChanges.length > 0 && (
-                            <Card className="w-full max-w-5xl">
-                                <div className="flex items-center space-x-2 mb-6 text-zinc-400">
-                                    <Trophy className="w-5 h-5" />
-                                    <h3 className="text-sm font-bold uppercase tracking-widest">Points Breakdown</h3>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {/* Team A - Left */}
-                                    <div className="space-y-2">
-                                        <h4 className="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-3">Team {matchState.captainA?.username}</h4>
-                                        {teamA.map(player => {
-                                            const change = matchState.playerPointsChanges?.find(p => p.playerId === player.id);
-                                            const isSelf = player.id === currentUser.id;
-                                            return (
-                                                <div 
-                                                    key={player.id} 
-                                                    className={`flex items-center justify-between gap-2 p-3 rounded-xl border ${
-                                                        change?.isWinner 
-                                                            ? 'bg-emerald-500/10 border-emerald-500/20' 
-                                                            : 'bg-rose-500/10 border-rose-500/20'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex-shrink-0 flex items-center justify-center overflow-hidden text-white text-xs font-bold">
-                                                            {player.avatarUrl ? <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" /> : player.username[0].toUpperCase()}
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <span className={`font-bold text-sm truncate block ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>{player.username}</span>
-                                                            {change && (
-                                                                <span className={`text-[10px] font-mono ${change.pointsChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                    {change.pointsChange >= 0 ? '+' : ''}{change.pointsChange} · Total: {change.newTotal}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    {!isSelf && (
-                                                        <div className="flex items-center gap-1 shrink-0">
-                                                            <button 
-                                                                onClick={() => handleCommend(player.id)}
-                                                                disabled={(matchInteractions || []).includes(player.id)}
-                                                                className={`p-1.5 rounded-lg transition-colors ${(matchInteractions || []).includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-500/20 text-emerald-500'}`}
-                                                                title="Commend"
-                                                            >
-                                                                <ThumbsUp className="w-4 h-4" />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => openReportModal(player.id)}
-                                                                disabled={(matchInteractions || []).includes(player.id)}
-                                                                className={`p-1.5 rounded-lg transition-colors ${(matchInteractions || []).includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 text-red-500'}`}
-                                                                title="Report"
-                                                            >
-                                                                <Flag className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
+                            <div className="space-y-2">
+                                <h4 className="text-xs uppercase tracking-widest text-emerald-400 font-bold mb-3">Team {matchState.captainA?.username}</h4>
+                                {teamA.map(player => (
+                                    <div key={player.id} className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/10">
+                                        <span className="font-bold text-sm truncate block text-white">{player.username}</span>
+                                        <span className="text-xs text-zinc-500">{getRankInfo(player.points).name}</span>
                                     </div>
-                                    {/* Team B - Right */}
-                                    <div className="space-y-2">
-                                        <h4 className="text-xs uppercase tracking-widest text-rose-400 font-bold mb-3">Team {matchState.captainB?.username}</h4>
-                                        {teamB.map(player => {
-                                            const change = matchState.playerPointsChanges?.find(p => p.playerId === player.id);
-                                            const isSelf = player.id === currentUser.id;
-                                            return (
-                                                <div 
-                                                    key={player.id} 
-                                                    className={`flex items-center justify-between gap-2 p-3 rounded-xl border ${
-                                                        change?.isWinner 
-                                                            ? 'bg-emerald-500/10 border-emerald-500/20' 
-                                                            : 'bg-rose-500/10 border-rose-500/20'
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                                                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex-shrink-0 flex items-center justify-center overflow-hidden text-white text-xs font-bold">
-                                                            {player.avatarUrl ? <img src={player.avatarUrl} alt="" className="w-full h-full object-cover" /> : player.username[0].toUpperCase()}
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <span className={`font-bold text-sm truncate block ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>{player.username}</span>
-                                                            {change && (
-                                                                <span className={`text-[10px] font-mono ${change.pointsChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                    {change.pointsChange >= 0 ? '+' : ''}{change.pointsChange} · Total: {change.newTotal}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    {!isSelf && (
-                                                        <div className="flex items-center gap-1 shrink-0">
-                                                            <button 
-                                                                onClick={() => handleCommend(player.id)}
-                                                                disabled={(matchInteractions || []).includes(player.id)}
-                                                                className={`p-1.5 rounded-lg transition-colors ${(matchInteractions || []).includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-emerald-500/20 text-emerald-500'}`}
-                                                                title="Commend"
-                                                            >
-                                                                <ThumbsUp className="w-4 h-4" />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => openReportModal(player.id)}
-                                                                disabled={(matchInteractions || []).includes(player.id)}
-                                                                className={`p-1.5 rounded-lg transition-colors ${(matchInteractions || []).includes(player.id) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-red-500/20 text-red-500'}`}
-                                                                title="Report"
-                                                            >
-                                                                <Flag className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+                                ))}
+                            </div>
+                            <div className="space-y-2">
+                                <h4 className="text-xs uppercase tracking-widest text-rose-400 font-bold mb-3">Team {matchState.captainB?.username}</h4>
+                                {teamB.map(player => (
+                                    <div key={player.id} className="flex items-center justify-between p-3 rounded-lg bg-rose-500/10">
+                                        <span className="font-bold text-sm truncate block text-white">{player.username}</span>
+                                        <span className="text-xs text-zinc-500">{getRankInfo(player.points).name}</span>
                                     </div>
-                                </div>
-                            </Card>
-                        )}
-
-                        <div className="text-center">
-                            <Button onClick={resetMatch} size="lg">Return to Lobby</Button>
+                                ))}
+                            </div>
                         </div>
-                </div>
+                    </div>
             )}
         </div>
 
