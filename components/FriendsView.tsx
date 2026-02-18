@@ -7,7 +7,7 @@ import Modal from './ui/Modal';
 import { UserPlus, Check, X, UserMinus, Search } from 'lucide-react';
 
 const FriendsView = () => {
-  const { currentUser, allUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend, themeMode, setViewProfileId } = useGame();
+  const { currentUser, allUsers, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend, themeMode, setViewProfileId, onlineUserIds } = useGame();
   const [searchTerm, setSearchTerm] = useState('');
   const [showRemoveModal, setShowRemoveModal] = useState<string | null>(null);
 
@@ -45,12 +45,22 @@ const FriendsView = () => {
                                 className="flex items-center space-x-3 cursor-pointer"
                                 onClick={() => setViewProfileId(friend.id)}
                               >
-                                  <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${themeMode === 'dark' ? 'bg-zinc-800 text-white' : 'bg-zinc-200 text-zinc-700'}`}>
-                                      {friend.avatarUrl ? <img src={friend.avatarUrl} className="w-full h-full object-cover"/> : friend.username[0]}
+                                  <div className="relative">
+                                      <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${themeMode === 'dark' ? 'bg-zinc-800 text-white' : 'bg-zinc-200 text-zinc-700'}`}>
+                                          {friend.avatarUrl ? <img src={friend.avatarUrl} className="w-full h-full object-cover"/> : friend.username[0]}
+                                      </div>
+                                      {onlineUserIds?.has(friend.id) && (
+                                          <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-400 border-2 border-zinc-900 dark:border-black" title="Online" />
+                                      )}
                                   </div>
                                   <div>
-                                      <span className={`block font-bold text-sm ${themeMode === 'dark' ? 'text-zinc-200' : 'text-zinc-900'}`}>{friend.username}</span>
-                                      <span className={`text-[10px] ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>Lvl {friend.level || 1} • {Math.floor(friend.points)} MMR</span>
+                                      <div className="flex items-center gap-2">
+                                          <span className={`font-bold text-sm ${themeMode === 'dark' ? 'text-zinc-200' : 'text-zinc-900'}`}>{friend.username}</span>
+                                          {onlineUserIds?.has(friend.id) && (
+                                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" title="Online" />
+                                          )}
+                                      </div>
+                                      <span className={`text-[10px] block ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>Lvl {friend.level || 1} • {Math.floor(friend.points)} MMR</span>
                                   </div>
                               </div>
                               <button 

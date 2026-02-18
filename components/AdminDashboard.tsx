@@ -298,22 +298,25 @@ const AdminDashboard = () => {
               )}
             </div>
           </Card>
-          {reports.length > 0 && (
-            <Card>
-              <h3 className={`text-lg font-display font-bold mb-4 ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
-                Reports ({reports.length})
-              </h3>
-              <div className="space-y-2">
-                {reports.map(r => (
+          {/* Reports: always visible for admin and helpers in Tickets zone */}
+          <Card>
+            <h3 className={`text-lg font-display font-bold mb-4 ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
+              Reports ({reports.length})
+            </h3>
+            <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+              {reports.length === 0 ? (
+                <p className="text-center text-zinc-500 py-6">No reports yet.</p>
+              ) : (
+                reports.map(r => (
                   <div key={r.id} className={`p-3 rounded-xl border ${themeMode === 'dark' ? 'bg-white/5' : 'bg-black/5'}`}>
                     <p className="text-xs text-zinc-500">{new Date(r.timestamp).toLocaleString()}</p>
                     <p className="font-medium">{r.reporter} → {r.reportedUser}</p>
                     <p className="text-sm text-zinc-400">{r.reason}</p>
                   </div>
-                ))}
-              </div>
-            </Card>
-          )}
+                ))
+              )}
+            </div>
+          </Card>
         </div>
       )}
 

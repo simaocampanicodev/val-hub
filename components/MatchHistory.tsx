@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import Card from './ui/Card';
 import { MatchRecord } from '../types';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Crown } from 'lucide-react';
 
 const MatchHistory = () => {
   const { matchHistory, currentUser, themeMode } = useGame();
@@ -118,55 +118,20 @@ const MatchHistory = () => {
 
                       {/* Expanded Roster View */}
                       {expandedMatch === match.id && (
-                          <div className={`p-6 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/10' : 'border-black/5 bg-black/5'}`}>
+                              <div className={`p-6 border-t ${themeMode === 'dark' ? 'border-white/5 bg-black/10' : 'border-black/5 bg-black/5'}`}>
                               <div className="space-y-6">
-                                  {/* ⭐ NOVO: Points Breakdown - Mostrar pontos individuais se disponíveis */}
-                                  {match.playerPointsChanges && match.playerPointsChanges.length > 0 && (
-                                      <div className="mb-6 pb-6 border-b border-white/10">
-                                          <h4 className="text-xs uppercase text-zinc-500 mb-3 font-bold">Points Breakdown</h4>
-                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                              {match.playerPointsChanges
-                                                  .sort((a, b) => Math.abs(b.pointsChange) - Math.abs(a.pointsChange))
-                                                  .map((change) => (
-                                                      <div 
-                                                          key={change.playerId}
-                                                          className={`flex items-center justify-between p-3 rounded-lg text-sm ${
-                                                              change.isWinner 
-                                                                  ? 'bg-emerald-500/10 border border-emerald-500/20' 
-                                                                  : 'bg-rose-500/10 border border-rose-500/20'
-                                                          }`}
-                                                      >
-                                                          <div>
-                                                              <div className="font-medium">{change.playerName}</div>
-                                                              <div className="text-[10px] text-zinc-500">
-                                                                  {change.isWinner ? '🏆 Winner' : 'Loser'}
-                                                              </div>
-                                                          </div>
-                                                          <div className="text-right">
-                                                              <div className={`font-mono font-bold ${change.pointsChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                  {change.pointsChange >= 0 ? '+' : ''}{change.pointsChange}
-                                                              </div>
-                                                              <div className="text-[10px] text-zinc-500">
-                                                                  Total: {change.newTotal}
-                                                              </div>
-                                                          </div>
-                                                      </div>
-                                                  ))}
-                                          </div>
-                                      </div>
-                                  )}
-
                                   {/* Team Rosters */}
                                   <div className="grid grid-cols-2 gap-8">
                                       {/* Team A Roster */}
                                       <div>
                                           <h4 className="text-xs uppercase text-zinc-500 mb-2">Team {match.captainA} Players</h4>
                                           <div className="space-y-2">
-                                              {match.teamASnapshot.map(p => (
+                                              {match.teamASnapshot.map((p, idx) => (
                                                   <div key={p.id} className="flex items-center text-sm">
                                                       <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center overflow-hidden text-white mr-3">
                                                           {p.avatarUrl ? <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" /> : p.username[0].toUpperCase()}
                                                       </div>
+                                                      {idx === 0 && <Crown className="w-4 h-4 text-amber-400 mr-1.5 shrink-0" />}
                                                       <span className={`font-medium mr-2 ${themeMode === 'dark' ? 'text-zinc-300' : 'text-zinc-700'}`}>{p.username}</span>
                                                       <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-500/10 text-zinc-500">{p.role}</span>
                                                   </div>
@@ -178,11 +143,12 @@ const MatchHistory = () => {
                                       <div className="text-right">
                                           <h4 className="text-xs uppercase text-zinc-500 mb-2">Team {match.captainB} Players</h4>
                                           <div className="space-y-2">
-                                              {match.teamBSnapshot.map(p => (
+                                              {match.teamBSnapshot.map((p, idx) => (
                                                   <div key={p.id} className="flex items-center justify-end text-sm">
                                                        <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-500/10 text-zinc-500 mr-2">{p.role}</span>
                                                       <span className={`font-medium mr-3 ${themeMode === 'dark' ? 'text-zinc-300' : 'text-zinc-700'}`}>{p.username}</span>
-                                                      <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center overflow-hidden text-white">
+                                                      {idx === 0 && <Crown className="w-4 h-4 text-amber-400 ml-1.5 shrink-0" />}
+                                                      <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center overflow-hidden text-white ml-2">
                                                           {p.avatarUrl ? <img src={p.avatarUrl} alt="" className="w-full h-full object-cover" /> : p.username[0].toUpperCase()}
                                                       </div>
                                                   </div>

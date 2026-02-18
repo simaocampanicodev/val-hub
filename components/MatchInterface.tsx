@@ -10,7 +10,7 @@ import Button from './ui/Button';
 import Modal from './ui/Modal';
 import { getRankInfo } from '../services/gameService';
 import { MAP_IMAGES } from '../constants';
-import { Trophy, Clock, Ban, AlertTriangle, MessageSquare, Send, ThumbsUp, Flag, X, User, Copy, Lock } from 'lucide-react';
+import { Trophy, Clock, Ban, AlertTriangle, MessageSquare, Send, ThumbsUp, Flag, X, User, Copy, Lock, Crown } from 'lucide-react';
 
 const MatchInterface = () => {
   const { matchState, acceptMatch, draftPlayer, vetoMap, reportResult, sendChatMessage, currentUser, resetMatch, forceTimePass, exitMatchToLobby, handleBotAction, themeMode, isAdmin, commendPlayer, submitReport, matchInteractions, markPlayerAsInteracted, showToast } = useGame();
@@ -251,7 +251,7 @@ const MatchInterface = () => {
                         <select 
                             value={reportReason}
                             onChange={(e) => setReportReason(e.target.value)}
-                            className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-white outline-none"
+                            className="report-reason-select w-full bg-zinc-800 border border-white/10 rounded-xl p-3 text-white outline-none [&>option]:bg-zinc-800 [&>option]:text-zinc-200"
                         >
                             {reportReasons.map(r => <option key={r} value={r}>{r}</option>)}
                         </select>
@@ -515,6 +515,7 @@ const MatchInterface = () => {
                                                     <span className="text-xs">{player.username[0].toUpperCase()}</span>
                                                 )}
                                             </div>
+                                            {matchState.captainA?.id === player.id && <Crown className="w-4 h-4 text-amber-400 shrink-0" />}
                                             <span className={`font-display text-lg ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>{player.username}</span>
                                         </div>
                                         <span className="text-xs text-zinc-500">{getRankInfo(player.points).name}</span>
@@ -533,6 +534,7 @@ const MatchInterface = () => {
                                                     <span className="text-xs">{player.username[0].toUpperCase()}</span>
                                                 )}
                                             </div>
+                                            {matchState.captainB?.id === player.id && <Crown className="w-4 h-4 text-amber-400 shrink-0" />}
                                             <span className={`font-display text-lg ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>{player.username}</span>
                                         </div>
                                         <span className="text-xs text-zinc-500">{getRankInfo(player.points).name}</span>
@@ -572,64 +574,68 @@ const MatchInterface = () => {
 
                                     {/* Code Input/Display - centered */}
                                     {isCaptain ? (
-                                        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full">
-                                            <input
-                                                type="text"
-                                                value={localMatchCode}
-                                                onChange={(e) => {
-                                                  const filtered = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
-                                                  setLocalMatchCode(filtered);
-                                                }}
-                                                placeholder="Enter lobby code..."
-                                                className="w-full sm:max-w-[200px] bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-base text-white outline-none focus:border-emerald-400 font-mono tracking-[0.25em] text-center"
-                                            />
-                                            <div className="flex flex-row sm:flex-col items-center gap-2">
-                                              <button
-                                                  type="button"
-                                                  aria-label="Save match code"
-                                                  title="Save"
-                                                  onClick={async () => {
-                                                      const trimmed = localMatchCode.trim().toUpperCase();
-                                                      if (!trimmed || !matchState?.id) return;
-                                                      try {
-                                                        if ((matchState.matchCode || '').trim() !== trimmed) {
-                                                          await updateDoc(doc(db, 'active_matches', matchState.id), { matchCode: trimmed });
+                                        <div className="flex items-center justify-center gap-3 w-full">
+                                            <div className="flex-1 max-w-[220px] flex justify-center">
+                                                <input
+                                                    type="text"
+                                                    value={localMatchCode}
+                                                    onChange={(e) => {
+                                                      const filtered = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+                                                      setLocalMatchCode(filtered);
+                                                    }}
+                                                    placeholder="Lobby code"
+                                                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-base text-white outline-none focus:border-emerald-400 font-mono tracking-[0.25em] text-center"
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    aria-label="Save match code"
+                                                    title="Save"
+                                                    onClick={async () => {
+                                                        const trimmed = localMatchCode.trim().toUpperCase();
+                                                        if (!trimmed || !matchState?.id) return;
+                                                        try {
+                                                          if ((matchState.matchCode || '').trim() !== trimmed) {
+                                                            await updateDoc(doc(db, 'active_matches', matchState.id), { matchCode: trimmed });
+                                                          }
+                                                          setLocalMatchCode(trimmed);
+                                                          showToast('Match code saved', 'success');
+                                                        } catch (e) {
+                                                          console.warn('Failed to save match code', e);
+                                                          showToast('Failed to save match code', 'error');
                                                         }
-                                                        setLocalMatchCode(trimmed);
-                                                        showToast('Match code saved', 'success');
-                                                      } catch (e) {
-                                                        console.warn('Failed to save match code', e);
-                                                        showToast('Failed to save match code', 'error');
-                                                      }
-                                                  }}
-                                                  className="shrink-0 w-12 h-6 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 grid place-items-center transition-colors text-[10px] uppercase tracking-[0.2em] text-zinc-200"
-                                              >
-                                                  Save
-                                              </button>
-                                              <button
-                                                  type="button"
-                                                  aria-label="Copy match code"
-                                                  title="Copy"
-                                                  onClick={async () => {
-                                                      const code = (localMatchCode || matchState.matchCode || '').trim();
-                                                      if (!code) return;
-                                                      try {
-                                                        await navigator.clipboard.writeText(code);
-                                                        showToast('Match code copied to clipboard', 'success');
-                                                      } catch {
-                                                        showToast('Failed to copy match code', 'error');
-                                                      }
-                                                  }}
-                                                  className="shrink-0 w-12 h-6 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 grid place-items-center transition-colors"
-                                              >
-                                                  <Copy className="w-4 h-4 text-zinc-200" />
-                                              </button>
+                                                    }}
+                                                    className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 grid place-items-center text-[10px] uppercase tracking-[0.2em] text-zinc-200"
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    aria-label="Copy match code"
+                                                    title="Copy"
+                                                    onClick={async () => {
+                                                        const code = (localMatchCode || matchState.matchCode || '').trim();
+                                                        if (!code) return;
+                                                        try {
+                                                          await navigator.clipboard.writeText(code);
+                                                          showToast('Match code copied to clipboard', 'success');
+                                                        } catch {
+                                                          showToast('Failed to copy match code', 'error');
+                                                        }
+                                                    }}
+                                                    className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 grid place-items-center"
+                                                >
+                                                    <Copy className="w-4 h-4 text-zinc-200" />
+                                                </button>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full">
-                                            <div className="w-full sm:max-w-[200px] bg-black/40 border border-white/10 rounded-2xl px-4 py-3 font-mono text-base tracking-[0.25em] text-zinc-200 text-center">
-                                                {matchState.matchCode ? matchState.matchCode : 'WAITING...'}
+                                        <div className="flex items-center justify-center gap-3 w-full">
+                                            <div className="flex-1 max-w-[220px] flex justify-center">
+                                                <div className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 font-mono text-base tracking-[0.25em] text-zinc-200 text-center">
+                                                    {matchState.matchCode ? matchState.matchCode : 'WAITING...'}
+                                                </div>
                                             </div>
                                             <button
                                                 type="button"
@@ -645,13 +651,13 @@ const MatchInterface = () => {
                                                       showToast('Failed to copy match code', 'error');
                                                     }
                                                 }}
-                                                className={`shrink-0 w-12 h-12 rounded-2xl border grid place-items-center transition-colors ${
+                                                className={`shrink-0 w-10 h-10 rounded-2xl border grid place-items-center transition-colors ${
                                                     matchState.matchCode
                                                         ? 'bg-white/5 hover:bg-white/10 border-white/10'
                                                         : 'bg-white/0 border-white/5 opacity-40 cursor-not-allowed'
                                                 }`}
                                             >
-                                                <Copy className="w-5 h-5 text-zinc-200" />
+                                                <Copy className="w-4 h-4 text-zinc-200" />
                                             </button>
                                         </div>
                                     )}
