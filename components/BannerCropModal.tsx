@@ -24,6 +24,7 @@ export const BannerCropModal: React.FC<BannerCropModalProps> = ({
   const [position, setPosition] = useState({ x: 50, y: 50 });
   const [dragging, setDragging] = useState(false);
   const lastPointerRef = useRef({ x: 0, y: 0 });
+  const justReleasedDragRef = useRef(false);
 
   const clamp = (v: number) => Math.max(0, Math.min(100, v));
 
@@ -44,7 +45,11 @@ export const BannerCropModal: React.FC<BannerCropModalProps> = ({
         y: clamp(prev.y - dy * 0.5)
       }));
     };
-    const onUp = () => setDragging(false);
+    const onUp = () => {
+      justReleasedDragRef.current = true;
+      setDragging(false);
+      setTimeout(() => { justReleasedDragRef.current = false; }, 150);
+    };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     return () => {
@@ -52,6 +57,16 @@ export const BannerCropModal: React.FC<BannerCropModalProps> = ({
       window.removeEventListener('pointerup', onUp);
     };
   }, [dragging]);
+
+  const handleBackdropClick = useCallback((e: React.MouseEvent) => {
+    if (justReleasedDragRef.current) {
+      justReleasedDragRef.current = false;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onClose();
+  }, [onClose]);
 
   const handleConfirm = () => {
     onConfirm(`${Math.round(position.x)}% ${Math.round(position.y)}%`);
@@ -67,7 +82,7 @@ export const BannerCropModal: React.FC<BannerCropModalProps> = ({
   const content = (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center min-h-screen min-w-full bg-black/80 backdrop-blur-sm p-4"
-      onClick={onClose}
+      onClick={handleBackdropClick}
     >
       <div
         className={`relative w-full max-w-3xl rounded-2xl border shadow-2xl overflow-hidden ${
