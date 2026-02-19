@@ -15,7 +15,9 @@ import { BannerCropModal } from './BannerCropModal';
 const TRACKER_ICON_URL = "https://trackercdn.com/cdn/tracker.gg/tile-384.png";
 
 const TrackerNetworkIcon = ({ className = "w-6 h-6" }) => (
-  <img src={TRACKER_ICON_URL} alt="Tracker Network" className={className} style={{ objectFit: 'contain' }} />
+  <div className="p-2 rounded-full bg-red-500/10 shadow-red-500/50">
+    <img src={TRACKER_ICON_URL} alt="Tracker Network" className={className} style={{ objectFit: 'contain' }} />
+  </div>
 );
 
 const TWITCH_ICON_URL = "https://cdn-icons-png.flaticon.com/512/5968/5968819.png";
