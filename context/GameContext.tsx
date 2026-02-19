@@ -824,13 +824,24 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       score: `${finalScore.scoreA}-${finalScore.scoreB}`
     };
     
-    // ✅ Calcular e armazenar mudanças de pontos individuais (não atualizamos `users` no cliente)
+    const winningTeamAvg = validWinningTeam.length > 0
+      ? validWinningTeam.reduce((s, u) => s + (u.points ?? 0), 0) / validWinningTeam.length
+      : 0;
+    const losingTeamAvg = validLosingTeam.length > 0
+      ? validLosingTeam.reduce((s, u) => s + (u.points ?? 0), 0) / validLosingTeam.length
+      : 0;
+
     const pointsChanges: any[] = [];
 
     console.log('💰 Calculando pontos para equipa vencedora (simulação local)...');
     for (const w of validWinningTeam) {
-      const newPoints = calculatePoints(w.points, true, w.winstreak + 1);
-      const pointsChange = newPoints - w.points;
+      const newPoints = calculatePoints(
+        Math.round(w.points ?? 0),
+        true,
+        (w.winstreak ?? 0) + 1,
+        losingTeamAvg
+      );
+      const pointsChange = newPoints - Math.round(w.points ?? 0);
 
       console.log(`  ✅ ${w.username}: ${w.points} → ${newPoints} (${pointsChange >= 0 ? '+' : ''}${pointsChange})`);
 
@@ -845,8 +856,13 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     console.log('💰 Calculando pontos para equipa perdedora (simulação local)...');
     for (const l of validLosingTeam) {
-      const newPoints = calculatePoints(l.points, false, 0);
-      const pointsChange = newPoints - l.points;
+      const newPoints = calculatePoints(
+        Math.round(l.points ?? 0),
+        false,
+        0,
+        winningTeamAvg
+      );
+      const pointsChange = newPoints - Math.round(l.points ?? 0);
 
       console.log(`  ❌ ${l.username}: ${l.points} → ${newPoints} (${pointsChange >= 0 ? '+' : ''}${pointsChange})`);
 

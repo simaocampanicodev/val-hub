@@ -96,15 +96,44 @@ export const generateBot = (id: string, basePoints: number = 1000): User => {
   };
 };
 
-// Faceit-inspired point calculation (balanced around 20-25 points per match)
-export const calculatePoints = (currentPoints: number, isWin: boolean, streak: number) => {
-  const baseChange = 20; // Base points (similar to Faceit average)
-  const streakBonus = Math.min(streak * 1.5, 15); // Winstreak bonus (capped at +15)
-  
-  if (isWin) {
-    return currentPoints + baseChange + streakBonus;
+/** ELO-style expected score (0–1) vs opponent average. */
+function expectedScore(myPoints: number, opponentAvgPoints: number): number {
+  const diff = (opponentAvgPoints - myPoints) / 400;
+  return 1 / (1 + Math.pow(10, diff));
+}
+
+/**
+ * Faceit-inspired MMR change: integers only, no decimals.
+ * - Underdog (lower MMR) gains more on win, loses less on loss.
+ * - Winstreak gives extra points on win (capped).
+ * - K = 40 so an even game gives ~+20 / -20; underdog gains more, favourite less.
+ * @param currentPoints Current MMR (integer).
+ * @param isWin Whether the player won.
+ * @param streak Current winstreak (before this game); used only for wins.
+ * @param opponentTeamAvgPoints Average MMR of the opposing team (for underdog bonus). If omitted, uses flat base.
+ */
+export const calculatePoints = (
+  currentPoints: number,
+  isWin: boolean,
+  streak: number,
+  opponentTeamAvgPoints?: number
+): number => {
+  const K = 40; // even game → ~+20 win / -20 loss
+  const myPoints = Math.round(currentPoints);
+  const result = isWin ? 1 : 0;
+
+  let pointsChange: number;
+  if (opponentTeamAvgPoints != null && Number.isFinite(opponentTeamAvgPoints)) {
+    const oppAvg = Math.round(opponentTeamAvgPoints);
+    const expected = expectedScore(myPoints, oppAvg);
+    pointsChange = Math.round(K * (result - expected));
   } else {
-    // Loss: lose slightly less than base win to account for winstreak bonus
-    return Math.max(0, currentPoints - baseChange);
+    const baseChange = 20;
+    pointsChange = isWin ? baseChange : -baseChange;
   }
+
+  const streakBonus = isWin ? Math.min(Math.max(0, Math.floor(streak)), 10) : 0;
+  const totalChange = pointsChange + streakBonus;
+  const newPoints = Math.max(0, myPoints + totalChange);
+  return Math.round(newPoints);
 };
