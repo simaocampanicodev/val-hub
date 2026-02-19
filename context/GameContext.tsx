@@ -1,6 +1,3 @@
-// context/GameContext.tsx - VERSÃO COMPLETA E FUNCIONAL
-// ⭐ TODAS AS CORREÇÕES APLICADAS E TESTADAS
-
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { User, MatchState, MatchPhase, GameRole, GameMap, MatchRecord, ThemeMode, PlayerSnapshot, MatchScore, ChatMessage, Report, Quest, UserQuest, QuestType, FriendRequest, Ticket, TicketType, UserRole } from '../types';
 import { INITIAL_POINTS, MAPS, MATCH_FOUND_SOUND, QUEST_POOL } from '../constants';
@@ -814,7 +811,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const record: MatchRecord = {
       id: matchState.id,
       date: Date.now(),
-      map: matchState.selectedMap || 'Unknown',
+      map: matchState.selectedMap ?? GameMap.ASCENT,
       captainA: matchState.captainA ? matchState.captainA.username : (teamAUsers[0]?.username || 'Unknown'),
       captainB: matchState.captainB ? matchState.captainB.username : (teamBUsers[0]?.username || 'Unknown'),
       winner,

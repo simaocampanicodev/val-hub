@@ -1,5 +1,3 @@
-// services/authService.ts
-// VERSÃO FINAL: Com Firebase UID + Sem bcrypt
 import { 
   collection,
   doc,
