@@ -23,7 +23,7 @@ interface RegisterData {
   topAgents: string[];
 }
 
-interface GameContextType {
+export interface GameContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   /** txger. or role owner/mod/dev can access dashboard */
@@ -76,9 +76,8 @@ interface GameContextType {
   /** Users currently online (lastSeenAt within threshold); for display on other profiles */
   onlineUserIds: Set<string>;
   setUserRole: (userId: string, role: UserRole, verified: boolean) => Promise<void>;
+  resetDailyQuests: () => void; // <-- Add this line
 }
-
-const GameContext = createContext<GameContextType | undefined>(undefined);
 
 const initialUser: User = {
   id: 'user-1', username: 'Guest', points: INITIAL_POINTS, xp: 0, level: 1,
@@ -87,6 +86,59 @@ const initialUser: User = {
   topAgents: ['Jett', 'Reyna', 'Raze'], isBot: false,
   activeQuests: [], friends: [], friendRequests: [], friendQuestCountedIds: []
 };
+
+export const GameContext = React.createContext<GameContextType>({
+  isAuthenticated: false,
+  isAdmin: false,
+  hasDashboardAccess: false,
+  completeRegistration: async () => {},
+  logout: () => {},
+  currentUser: initialUser,
+  pendingAuthUser: null,
+  updateProfile: async () => {},
+  linkRiotAccount: async () => {},
+  queue: [],
+  queueJoinedAt: null,
+  joinQueue: async () => {},
+  leaveQueue: async () => {},
+  testFillQueue: () => {},
+  createTestMatchDirect: async () => {},
+  exitMatchToLobby: async () => {},
+  matchState: null,
+  acceptMatch: async () => {},
+  draftPlayer: async () => {},
+  vetoMap: async () => {},
+  reportResult: async () => ({ success: false }),
+  sendChatMessage: async () => {},
+  matchHistory: [],
+  allUsers: [],
+  reports: [],
+  submitReport: () => {},
+  replyToTicket: async () => {},
+  commendPlayer: async () => {},
+  resetMatch: async () => {},
+  forceTimePass: () => {},
+  resetSeason: async () => {},
+  themeMode: 'dark',
+  handleBotAction: () => {},
+  viewProfileId: null,
+  setViewProfileId: () => {},
+  claimQuestReward: () => {},
+  sendFriendRequest: async () => {},
+  acceptFriendRequest: async () => {},
+  rejectFriendRequest: async () => {},
+  removeFriend: async () => {},
+  matchInteractions: [],
+  markPlayerAsInteracted: () => {},
+  showToast: () => {},
+  removeToast: () => {},
+  toasts: [],
+  tickets: [],
+  submitTicket: async () => {},
+  onlineUserIds: new Set(),
+  setUserRole: async () => {},
+  resetDailyQuests: () => {},
+});
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -1040,7 +1092,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     updateProfile({ activeQuests: updatedQuests });
   };
 
-  const claimQuestReward = (questId: string) => {
+  const claimQuestReward = async (questId: string) => {
     if (!isAuthenticated) return;
     
     console.log(`🎁 Resgatando recompensa da quest: ${questId}`);
@@ -1066,17 +1118,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const newXP = currentUser.xp + questDef.xpReward;
     const { level: newLevel } = getLevelProgress(newXP);
     
-    console.log(`✅ Recompensa resgatada: +${questDef.xpReward} XP`);
-    console.log(`  XP: ${currentUser.xp} → ${newXP}`);
-    console.log(`  Level: ${currentUser.level} → ${newLevel}`);
-    
-    updateProfile({
-      activeQuests: updatedQuests,
-      xp: newXP,
-      level: newLevel
-    });
-    
-    showToast(`Quest Completed! +${questDef.xpReward} XP`, 'success');
+    try {
+      await updateProfile({
+        activeQuests: updatedQuests,
+        xp: newXP,
+        level: newLevel
+      });
+      showToast(`Quest Completed! +${questDef.xpReward} XP`, 'success');
+    } catch (err) {
+      showToast('Erro ao resgatar recompensa. Tente novamente.', 'error');
+    }
   };
 
   const completeRegistration = async (data: RegisterData) => {
@@ -1835,20 +1886,27 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [hasDashboardAccess, showToast]);
 
+  const resetDailyQuests = () => {
+    // Implement your reset logic here
+  };
+
   return (
-    <GameContext.Provider value={{
-      isAuthenticated, isAdmin, hasDashboardAccess, completeRegistration, logout, currentUser, pendingAuthUser,
-      updateProfile, linkRiotAccount, queue, queueJoinedAt, joinQueue, leaveQueue, testFillQueue,
-      createTestMatchDirect, exitMatchToLobby,
-      matchState, acceptMatch, draftPlayer, vetoMap, reportResult, sendChatMessage,
-      matchHistory, allUsers, reports, submitReport, commendPlayer, resetMatch,
-      forceTimePass, resetSeason, themeMode, handleBotAction,
-      viewProfileId, setViewProfileId, claimQuestReward,
-      sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
-      matchInteractions, markPlayerAsInteracted,
-      showToast, removeToast, toasts,
-      tickets, submitTicket, replyToTicket, onlineUserIds, setUserRole
-    }}>
+    <GameContext.Provider
+      value={{
+        isAuthenticated, isAdmin, hasDashboardAccess, completeRegistration, logout, currentUser, pendingAuthUser,
+        updateProfile, linkRiotAccount, queue, queueJoinedAt, joinQueue, leaveQueue, testFillQueue,
+        createTestMatchDirect, exitMatchToLobby,
+        matchState, acceptMatch, draftPlayer, vetoMap, reportResult, sendChatMessage,
+        matchHistory, allUsers, reports, submitReport, commendPlayer, resetMatch,
+        forceTimePass, resetSeason, themeMode, handleBotAction,
+        viewProfileId, setViewProfileId, claimQuestReward,
+        sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
+        matchInteractions, markPlayerAsInteracted,
+        showToast, removeToast, toasts,
+        tickets, submitTicket, replyToTicket, onlineUserIds, setUserRole,
+        resetDailyQuests,
+      }}
+    >
       {children}
     </GameContext.Provider>
   );

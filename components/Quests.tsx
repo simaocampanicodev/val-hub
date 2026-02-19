@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import { QUEST_POOL } from '../constants';
 import Card from './ui/Card';
@@ -8,7 +8,8 @@ import { Check, Lock, Zap, Clock, Star, Trophy, Target, Calendar } from 'lucide-
 import { Quest, UserQuest } from '../types';
 
 const Quests = () => {
-  const { currentUser, claimQuestReward, themeMode } = useGame();
+    const { currentUser, claimQuestReward, themeMode } = useGame();
+    const [loadingQuestId, setLoadingQuestId] = useState<string | null>(null);
 
   if (!currentUser.activeQuests || currentUser.activeQuests.length === 0) {
       return <div className="text-zinc-500 text-center italic p-8">No active missions available.</div>;
@@ -98,11 +99,16 @@ const Quests = () => {
                                     COMPLETED
                                 </button>
                              ) : (
-                                <button 
-                                    onClick={() => claimQuestReward(userQuest.questId)}
-                                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.4)] animate-pulse transition-all"
+                                <button
+                                    onClick={async () => {
+                                        setLoadingQuestId(userQuest.questId);
+                                        await claimQuestReward(userQuest.questId);
+                                        setLoadingQuestId(null);
+                                    }}
+                                    disabled={loadingQuestId === userQuest.questId}
+                                    className={`w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.4)] animate-pulse transition-all ${loadingQuestId === userQuest.questId ? 'opacity-60 cursor-not-allowed' : ''}`}
                                 >
-                                    CLAIM REWARD
+                                    {loadingQuestId === userQuest.questId ? 'PROCESSING...' : 'CLAIM REWARD'}
                                 </button>
                              )
                         ) : (
