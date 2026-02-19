@@ -143,7 +143,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           friendRequests: d.friend_requests || [], friendQuestCountedIds: d.friend_quest_counted_ids || [],
           avatarUrl: d.avatarUrl, bannerUrl: d.bannerUrl, bannerPosition: d.bannerPosition, riotId: d.riotId, riotTag: d.riotTag,
           lastPointsChange: d.lastPointsChange, lastSeenAt: d.lastSeenAt,
-          role: (d.role as UserRole) || 'user', verified: !!d.verified
+          role: (d.role as UserRole) || 'user', verified: !!d.verified,
+          trackerUrl: d.trackerUrl, trackerAddedAt: d.trackerAddedAt,
+          twitchUrl: d.twitchUrl, twitchAddedAt: d.twitchAddedAt
         };
       });
       // Preserve bots (they exist only in queue/match, not in Firestore USERS) so they don't disappear
@@ -378,7 +380,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           lastMonthlyQuestGeneration: data.lastMonthlyQuestGeneration,
           lastSeenAt: data.lastSeenAt,
           role: (data.role as UserRole) || 'user',
-          verified: !!data.verified
+          verified: !!data.verified,
+          trackerUrl: data.trackerUrl,
+          trackerAddedAt: data.trackerAddedAt,
+          twitchUrl: data.twitchUrl,
+          twitchAddedAt: data.twitchAddedAt
         }));
       }
     });
