@@ -9,9 +9,11 @@ export const getRankInfo = (points: number, leaderboardPosition?: number) => {
   const isTop3 = leaderboardPosition != null && leaderboardPosition >= 1 && leaderboardPosition <= 3;
   if (isTop3 && points >= 2001) {
     const top3Rank = RANK_THRESHOLDS[RANK_THRESHOLDS.length - 1];
+    // Return positional Top 1/2/3 instead of a generic "Top 3"
+    const posName = leaderboardPosition ? `Top ${leaderboardPosition}` : 'Top 3';
     return {
       ...top3Rank,
-      name: 'Top 3',
+      name: posName,
       min: top3Rank.min,
       max: top3Rank.max || Infinity
     };

@@ -113,6 +113,16 @@ export interface Ticket {
   message?: string;
   parts?: Record<string, string>;
   timestamp: number;
+  /** Reply added by staff/helpers */
+  reply?: {
+    text: string;
+    replierId: string;
+    replierUsername: string;
+    replierAvatarUrl?: string;
+    repliedAt: number;
+  };
+  /** Ticket status: open (default) or closed when replied */
+  status?: 'open' | 'closed';
 }
 
 export enum MatchPhase {

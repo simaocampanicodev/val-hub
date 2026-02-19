@@ -55,6 +55,7 @@ interface GameContextType {
   allUsers: User[];
   reports: Report[];
   submitReport: (targetUserId: string, reason: string) => void;
+  replyToTicket: (ticketId: string, replyText: string) => Promise<void>;
   commendPlayer: (targetUserId: string) => Promise<void>;
   resetMatch: () => Promise<void>;
   forceTimePass: () => void;
@@ -412,7 +413,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           subject: d.subject,
           message: d.message,
           parts: d.parts,
-          timestamp: d.timestamp ?? 0
+          timestamp: d.timestamp ?? 0,
+          reply: d.reply || undefined,
+          status: d.status || 'open'
         };
       });
       setTickets(list);
@@ -1694,6 +1697,27 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       reason,
       timestamp: Date.now()
     }]);
+    // Persist to Firestore so it survives refresh and is visible in dashboard
+    persistReport(targetUserId, reason);
+  };
+
+  // Persist reports to Firestore as tickets so they are visible in dashboard and do not disappear on refresh
+  const persistReport = async (targetUserId: string, reason: string) => {
+    try {
+      await addDoc(collection(db, COLLECTIONS.TICKETS), {
+        userId: currentUser.id,
+        username: currentUser.username,
+        type: 'support',
+        subject: `Player report: ${targetUserId}`,
+        message: reason,
+        reportedUserId: targetUserId,
+        timestamp: Date.now()
+      });
+      showToast('Report submitted!', 'success');
+    } catch (e: any) {
+      console.warn('Failed to persist report:', e);
+      showToast('Failed to submit report', 'error');
+    }
   };
 
   const resetMatch = async () => {
@@ -1777,6 +1801,27 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [currentUser.id, currentUser.username, showToast]);
 
+  const replyToTicket = useCallback(async (ticketId: string, replyText: string) => {
+    if (!ticketId || !replyText) return;
+    try {
+      const ticketRef = doc(db, COLLECTIONS.TICKETS, ticketId);
+      await updateDoc(ticketRef, {
+        reply: {
+          text: replyText,
+          replierId: currentUser.id,
+          replierUsername: currentUser.username,
+          replierAvatarUrl: currentUser.avatarUrl || null,
+          repliedAt: Date.now()
+        },
+        status: 'closed'
+      });
+      showToast('Reply posted.', 'success');
+    } catch (e: any) {
+      console.error('Failed to reply to ticket:', e);
+      showToast('Failed to post reply', 'error');
+    }
+  }, [currentUser.id, currentUser.username, currentUser.avatarUrl, showToast]);
+
   const setUserRole = useCallback(async (userId: string, role: UserRole, verified: boolean) => {
     if (!hasDashboardAccess) return;
     try {
@@ -1799,7 +1844,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       sendFriendRequest, acceptFriendRequest, rejectFriendRequest, removeFriend,
       matchInteractions, markPlayerAsInteracted,
       showToast, removeToast, toasts,
-      tickets, submitTicket, onlineUserIds, setUserRole
+      tickets, submitTicket, replyToTicket, onlineUserIds, setUserRole
     }}>
       {children}
     </GameContext.Provider>

@@ -282,9 +282,9 @@ const MatchInterface = () => {
   // --- MAIN LAYOUT ---
   // STRICT Height Calculation to prevent Body Scroll: 100vh - Header(80px) - Padding(approx 100px total vert)
   // We use 180px buffer. 
-  return (
-    <>
-    <div className={`flex flex-col lg:flex-row gap-6 w-full max-w-7xl mx-auto h-[calc(100vh-180px)] overflow-hidden`}>
+    return (
+        <>
+        <div className={`flex flex-col lg:flex-row gap-6 w-full max-w-7xl mx-auto h-[calc(100vh-180px)] overflow-hidden pb-24 lg:pb-0`}>
         
         {/* ⭐ NOVO: Botão Admin para sair da match */}
         {isAdmin && (
