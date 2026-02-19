@@ -46,6 +46,9 @@ export const RankRequirementsModal: React.FC<RankRequirementsModalProps> = ({ is
             const maxDisplay = rankThreshold.max === Infinity ? '2000+' : rankThreshold.max;
             const minDisplay = rankThreshold.min === 0 ? '0' : rankThreshold.min;
 
+            // Se for Top 3 (L10), mostrar apenas '2000+ pts'
+            const isTop3 = level === 10 && rankThreshold.name.toLowerCase().includes('top');
+
             return (
               <div
                 key={`${rankThreshold.name}-${level}`}
@@ -70,7 +73,7 @@ export const RankRequirementsModal: React.FC<RankRequirementsModalProps> = ({ is
                     {rankThreshold.name} {level === 10 ? '(L10)' : ''}
                   </h4>
                   <p className="text-[10px] text-zinc-400 leading-tight">
-                    {minDisplay} – {maxDisplay} pts
+                    {isTop3 ? '2000+ pts' : `${minDisplay} – ${maxDisplay} pts`}
                   </p>
                 </div>
               </div>
