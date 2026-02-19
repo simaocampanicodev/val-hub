@@ -12,15 +12,21 @@ import { GameRole, UserRole } from '../types';
 import { uploadToCloudinary, uploadBannerToCloudinary } from '../services/cloudinary';
 import { BannerCropModal } from './BannerCropModal';
 
-const TRACKER_ICON_URL = "https://trackercdn.com/cdn/tracker.gg/tile-384.png";
+// Tracker Network oficial logo
+// 🔍 Para encontrar este componente: Ctrl+F → "TrackerNetworkIcon"
+// 👉 Substitua a URL abaixo pelo link direto do PNG oficial do Tracker Network
+//    Ex: https://trackernetwork.com/favicon.png  ou o link do logo oficial deles
+const TRACKER_ICON_URL = "https://PLACEHOLDER_TRACKER_ICON_URL.png"; // ← SUBSTITUIR AQUI
 
 const TrackerNetworkIcon = ({ className = "w-6 h-6" }) => (
-  <div className="p-2 rounded-full bg-red-500/10 shadow-red-500/50">
-    <img src={TRACKER_ICON_URL} alt="Tracker Network" className={className} style={{ objectFit: 'contain' }} />
-  </div>
+  <img src={TRACKER_ICON_URL} alt="Tracker Network" className={className} style={{ objectFit: 'contain' }} />
 );
 
-const TWITCH_ICON_URL = "https://cdn-icons-png.flaticon.com/512/5968/5968819.png";
+// Twitch oficial logo (roxo)
+// 🔍 Para encontrar este componente: Ctrl+F → "TwitchOfficialIcon"
+// 👉 Substitua a URL abaixo pelo link direto do PNG oficial da Twitch
+//    Ex: https://brand.twitch.tv/assets/logos/svg/glitch/...  ou o favicon oficial
+const TWITCH_ICON_URL = "https://PLACEHOLDER_TWITCH_ICON_URL.png"; // ← SUBSTITUIR AQUI
 
 const TwitchOfficialIcon = ({ className = "w-6 h-6" }) => (
   <img src={TWITCH_ICON_URL} alt="Twitch" className={className} style={{ objectFit: 'contain' }} />
@@ -644,8 +650,8 @@ const Profile = () => {
                   <div className="flex items-center gap-3">
                     {socialModalEditingType === 'tracker' ? (
                       <>
-                        <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/50">
-                          <TrackerNetworkIcon className="w-6 h-6 text-blue-400" />
+                        <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/50">
+                          <TrackerNetworkIcon className="w-6 h-6 text-red-400" />
                         </div>
                         <h2 className={`text-2xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-zinc-900'}`}>Tracker Network</h2>
                       </>
@@ -681,7 +687,7 @@ const Profile = () => {
                   placeholder={socialModalEditingType === 'tracker' ? 'https://tracker.gg/valorant/profile/...' : 'https://twitch.tv/yourname'}
                   value={socialModalEditingType === 'tracker' ? trackerInput : twitchInput}
                   onChange={(e) => socialModalEditingType === 'tracker' ? setTrackerInput(e.target.value) : setTwitchInput(e.target.value)}
-                  className={`w-full rounded-xl p-3 border outline-none focus:ring-2 ${themeMode === 'dark' ? 'bg-black/40 border-white/10 text-white focus:ring-blue-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:ring-blue-400'}`}
+                  className={`w-full rounded-xl p-3 border outline-none focus:ring-2 ${themeMode === 'dark' ? 'bg-black/40 border-white/10 text-white focus:ring-red-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:ring-red-400'}`}
                 />
 
                 {/* Error Message */}
@@ -757,10 +763,10 @@ const Profile = () => {
                                 target="_blank" 
                                 rel="noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-blue-500/30 to-cyan-500/30 border border-blue-400/50 hover:from-blue-500/50 hover:to-cyan-500/50 hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-blue-500/40"
+                                className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-red-600/30 to-rose-500/30 border border-red-500/50 hover:from-red-600/50 hover:to-rose-500/50 hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-red-500/40"
                                 title="Tracker Network"
                             >
-                                <TrackerNetworkIcon className="w-6 h-6 text-blue-300" />
+                                <TrackerNetworkIcon className="w-6 h-6 text-red-300" />
                             </a>
                             {isOwnProfile && (
                                 <button
