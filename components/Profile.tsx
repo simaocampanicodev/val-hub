@@ -90,9 +90,11 @@ const Profile = () => {
     setIdentityError(null);
     setRiotError(null);
     setAgentError(null);
-        setTrackerInput(profileUser.trackerUrl || '');
-        setTwitchInput(profileUser.twitchUrl || '');
-  }, [profileUser.id, profileUser.username, profileUser.primaryRole]);
+
+    // Garantir que os links sejam carregados corretamente
+    setTrackerInput(profileUser.trackerUrl || '');
+    setTwitchInput(profileUser.twitchUrl || '');
+  }, [profileUser]);
 
   // Check for changes
   useEffect(() => {
@@ -499,60 +501,46 @@ const Profile = () => {
   const TWITCH_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/c/ce/Twitch_logo_2019.svg";
   const TRACKER_IMAGE = "https://trackernetwork.s3.amazonaws.com/branding/logos/tracker.svg";
 
-  // Renderização dos links com ícones e edição
+  // Renderização dos links com lógica ajustada
   const renderSocialLinks = () => (
     <div className="social-links">
       <div className="link-item">
         <img src={TWITCH_IMAGE} alt="Twitch" className="social-icon" />
-        {isOwnProfile ? (
-          showTwitchInput ? (
-            <input
-              type="text"
-              value={twitchInput}
-              onChange={(e) => setTwitchInput(e.target.value)}
-              placeholder="Enter Twitch URL"
-            />
-          ) : (
-            <div className="link-display">
-              <a href={profileUser.twitchUrl} target="_blank" rel="noopener noreferrer">
-                {profileUser.twitchUrl || 'No Twitch link'}
-              </a>
-              <button onClick={() => setShowTwitchInput(true)}>✏️</button>
-            </div>
-          )
-        ) : (
+        {profileUser.twitchUrl ? (
           <a href={profileUser.twitchUrl} target="_blank" rel="noopener noreferrer">
-            {profileUser.twitchUrl || 'No Twitch link'}
+            {profileUser.twitchUrl}
           </a>
+        ) : isOwnProfile ? (
+          <input
+            type="text"
+            value={twitchInput}
+            onChange={(e) => setTwitchInput(e.target.value)}
+            placeholder="Enter Twitch URL"
+          />
+        ) : (
+          <span>No Twitch link</span>
         )}
       </div>
 
       <div className="link-item">
         <img src={TRACKER_IMAGE} alt="Tracker" className="social-icon" />
-        {isOwnProfile ? (
-          showTrackerInput ? (
-            <input
-              type="text"
-              value={trackerInput}
-              onChange={(e) => setTrackerInput(e.target.value)}
-              placeholder="Enter Tracker URL"
-            />
-          ) : (
-            <div className="link-display">
-              <a href={profileUser.trackerUrl} target="_blank" rel="noopener noreferrer">
-                {profileUser.trackerUrl || 'No Tracker link'}
-              </a>
-              <button onClick={() => setShowTrackerInput(true)}>✏️</button>
-            </div>
-          )
-        ) : (
+        {profileUser.trackerUrl ? (
           <a href={profileUser.trackerUrl} target="_blank" rel="noopener noreferrer">
-            {profileUser.trackerUrl || 'No Tracker link'}
+            {profileUser.trackerUrl}
           </a>
+        ) : isOwnProfile ? (
+          <input
+            type="text"
+            value={trackerInput}
+            onChange={(e) => setTrackerInput(e.target.value)}
+            placeholder="Enter Tracker URL"
+          />
+        ) : (
+          <span>No Tracker link</span>
         )}
       </div>
 
-      {isOwnProfile && (showTwitchInput || showTrackerInput) && (
+      {isOwnProfile && (twitchInput || trackerInput) && (
         <Button onClick={handleSaveSocialLinks}>Save Links</Button>
       )}
 
