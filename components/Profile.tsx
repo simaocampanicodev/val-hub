@@ -465,6 +465,23 @@ const Profile = () => {
         setSocialError(null);
     };
 
+    const removeSocialLink = async () => {
+        try {
+            if (socialModalEditingType === 'tracker') {
+                await updateProfile({ trackerUrl: '', trackerAddedAt: undefined });
+                setTrackerInput('');
+                showToast('Tracker link removed!', 'success');
+            } else if (socialModalEditingType === 'twitch') {
+                await updateProfile({ twitchUrl: '', twitchAddedAt: undefined });
+                setTwitchInput('');
+                showToast('Twitch link removed!', 'success');
+            }
+            closeSocialModal();
+        } catch (e: any) {
+            setSocialError(e?.message || 'Failed to remove link');
+        }
+    };
+
   const confirmResetSeason = () => {
       resetSeason();
       setShowResetSeasonModal(false);
@@ -694,6 +711,18 @@ const Profile = () => {
                   <p className="font-semibold mb-1">Make sure your link contains:</p>
                   <p>✓ {socialModalEditingType === 'tracker' ? '"tracker"' : '"twitch"'}</p>
                 </div>
+
+                {/* Remove Link (only shown when a link already exists) */}
+                {((socialModalEditingType === 'tracker' && profileUser.trackerUrl) ||
+                  (socialModalEditingType === 'twitch' && profileUser.twitchUrl)) && (
+                  <button
+                    onClick={removeSocialLink}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/50 transition-all duration-200 text-sm font-medium"
+                  >
+                    <X className="w-4 h-4" />
+                    Remove link from profile
+                  </button>
+                )}
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
