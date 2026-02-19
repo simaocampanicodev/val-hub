@@ -76,9 +76,9 @@ const Profile = () => {
     setIdentityError(null);
     setRiotError(null);
     setAgentError(null);
-        setTrackerInput(profileUser.trackerUrl || '');
-        setTwitchInput(profileUser.twitchUrl || '');
-  }, [profileUser.id, profileUser.username, profileUser.primaryRole]);
+    setTrackerInput(profileUser.trackerUrl || ''); // Carregar o trackerUrl salvo
+    setTwitchInput(profileUser.twitchUrl || '');  // Carregar o twitchUrl salvo
+  }, [profileUser.id, profileUser.username, profileUser.primaryRole, profileUser.trackerUrl, profileUser.twitchUrl]);
 
   // Check for changes
   useEffect(() => {
@@ -437,6 +437,95 @@ const Profile = () => {
       resetSeason();
       setShowResetSeasonModal(false);
   };
+
+  // Função para salvar os links da Twitch e TrackerNetwork no Firestore
+  const handleSaveSocialLinks = async () => {
+    try {
+      if (!trackerInput.trim() && !twitchInput.trim()) {
+        setSocialError("At least one link must be provided.");
+        return;
+      }
+
+      setSocialError(null);
+      console.log("💾 Salvando links no Firestore:", { trackerUrl: trackerInput, twitchUrl: twitchInput });
+
+      // Salvar os links no Firestore
+      await updateProfile({
+        trackerUrl: trackerInput.trim(),
+        twitchUrl: twitchInput.trim(),
+      });
+
+      showToast("Links updated successfully!", "success");
+    } catch (error) {
+      console.error("❌ Erro ao salvar links:", error);
+      setSocialError("Error saving links. Try again.");
+    }
+  };
+
+  // URLs das imagens oficiais
+  const TWITCH_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/c/ce/Twitch_logo_2019.svg";
+  const TRACKER_IMAGE = "https://trackernetwork.s3.amazonaws.com/branding/logos/tracker.svg";
+
+  // Renderização dos links com ícones e edição
+  const renderSocialLinks = () => (
+    <div className="social-links">
+      <div className="link-item">
+        <img src={TWITCH_IMAGE} alt="Twitch" className="social-icon" />
+        {isOwnProfile ? (
+          showTwitchInput ? (
+            <input
+              type="text"
+              value={twitchInput}
+              onChange={(e) => setTwitchInput(e.target.value)}
+              placeholder="Enter Twitch URL"
+            />
+          ) : (
+            <div className="link-display">
+              <a href={profileUser.twitchUrl} target="_blank" rel="noopener noreferrer">
+                {profileUser.twitchUrl || 'No Twitch link'}
+              </a>
+              <button onClick={() => setShowTwitchInput(true)}>✏️</button>
+            </div>
+          )
+        ) : (
+          <a href={profileUser.twitchUrl} target="_blank" rel="noopener noreferrer">
+            {profileUser.twitchUrl || 'No Twitch link'}
+          </a>
+        )}
+      </div>
+
+      <div className="link-item">
+        <img src={TRACKER_IMAGE} alt="Tracker" className="social-icon" />
+        {isOwnProfile ? (
+          showTrackerInput ? (
+            <input
+              type="text"
+              value={trackerInput}
+              onChange={(e) => setTrackerInput(e.target.value)}
+              placeholder="Enter Tracker URL"
+            />
+          ) : (
+            <div className="link-display">
+              <a href={profileUser.trackerUrl} target="_blank" rel="noopener noreferrer">
+                {profileUser.trackerUrl || 'No Tracker link'}
+              </a>
+              <button onClick={() => setShowTrackerInput(true)}>✏️</button>
+            </div>
+          )
+        ) : (
+          <a href={profileUser.trackerUrl} target="_blank" rel="noopener noreferrer">
+            {profileUser.trackerUrl || 'No Tracker link'}
+          </a>
+        )}
+      </div>
+
+      {isOwnProfile && (showTwitchInput || showTrackerInput) && (
+        <Button onClick={handleSaveSocialLinks}>Save Links</Button>
+      )}
+
+      {socialError && <p className="error-text">{socialError}</p>}
+    </div>
+  );
 
   return (
     <>
@@ -1044,7 +1133,7 @@ const Profile = () => {
                 >
                     <div className={`p-4 rounded-full mb-3 transition-shadow duration-300 ${badge.active ? `${badge.glowColor} shadow-[0_0_10px_rgba(0,0,0,0)]` : themeMode === 'dark' ? 'bg-white/5' : 'bg-zinc-200'}`}>
                         {React.cloneElement(badge.icon as React.ReactElement<{ className?: string }>, { 
-                            className: `w-8 h-8 ${badge.active ? (themeMode === 'dark' ? 'text-white' : 'text-zinc-900') : (themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400')}`
+                            className: `w-8 h-8 ${badge.active ? (themeMode === 'dark' ? 'text-white' : 'text-zinc-900') : (themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400')}` 
                         })}
                     </div>
                     <span className={`text-sm font-bold truncate w-full ${badge.active ? (themeMode === 'dark' ? 'text-white' : 'text-zinc-900') : (themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-400')}`}>{badge.name}</span>
