@@ -133,7 +133,6 @@ export const RANK_THRESHOLDS = [
 export const QUEST_POOL: Quest[] = [
   { id: 'q_daily_win_1', type: 'WIN_MATCHES', category: 'DAILY', description: 'First Win of the Day', target: 1, xpReward: 50 },
   { id: 'q_daily_play_1', type: 'PLAY_MATCHES', category: 'DAILY', description: 'Team Player (Play 1)', target: 1, xpReward: 30 },
-  { id: 'q_daily_play_3', type: 'PLAY_MATCHES', category: 'DAILY', description: 'Daily Grind (Play 3)', target: 3, xpReward: 90 },
   { id: 'q_daily_play_3', type: 'PLAY_MATCHES', category: 'DAILY', description: 'Daily Grind (Play 3)', target: 3, xpReward: 100 },
   { id: 'q_daily_commend_1', type: 'GIVE_COMMENDS', category: 'DAILY', description: 'Spread Positivity (Commend)', target: 1, xpReward: 20 },
 

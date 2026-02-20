@@ -1041,7 +1041,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       );
 
       // ✅ Sempre incluir 'q_daily_play_3' como uma das daily quests
-      const randomDaily = pick(dailyQuests.filter(q => q.id !== 'q_daily_play_3'), 1);
+      const randomDaily = pick(dailyQuests.filter(q => q.id !== 'q_daily_play_3'), 2);
       const newDailies = [...randomDaily, { questId: 'q_daily_play_3', progress: 0, completed: false, claimed: false }];
 
       next = [...newDailies, ...pick(monthlyQuests, 2), ...currentUniqueQuests];

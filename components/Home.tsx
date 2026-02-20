@@ -164,7 +164,7 @@ const Home = ({ setCurrentView }: { setCurrentView: (view: string) => void }) =>
             <div className={`p-4 rounded-2xl mb-3 border ${themeMode === 'dark' ? 'bg-zinc-900/50 border-white/5' : 'bg-zinc-50 border-zinc-100'}`}>
               <div className="flex justify-between text-xs text-zinc-500 font-medium uppercase tracking-wider mb-1">
                 <span>Best Map</span>
-                <span className="text-rose-500">{bestMapData.name !== 'N/A' ? `${bestMapData.wr.toFixed(0)}% WR` : '-'}</span>
+                <span className="text-rose-500">{bestMapData.name !== 'N/A' ? `${bestMapData.wr.toFixed(0)}% WR` : ''}</span>
               </div>
               <div className={`text-2xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
                 {bestMapData.name}

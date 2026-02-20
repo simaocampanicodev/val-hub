@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { Home, BarChart2, LogOut, History, Moon, Sun, Menu, X, LayoutDashboard, Target, Users, Lightbulb } from 'lucide-react';
+import { Home, BarChart2, LogOut, History, Moon, Sun, Menu, X, LayoutDashboard, Target, Users, Lightbulb, Swords } from 'lucide-react';
 import Button from './ui/Button';
 
 interface LayoutProps {
@@ -42,7 +42,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children }
 
     const navItems = [
         { id: 'home', icon: Home, label: 'Home' },
-        { id: 'queue', icon: Target, label: 'Play' },
+        { id: 'queue', icon: Swords, label: 'Play' },
         { id: 'leaderboard', icon: BarChart2, label: 'Rankings' },
         { id: 'history', icon: History, label: 'History' },
         { id: 'quests', icon: Target, label: 'Quests' },
