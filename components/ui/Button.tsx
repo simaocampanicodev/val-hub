@@ -6,21 +6,22 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
 }
 
-const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  size = 'md', 
-  className = '', 
+const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  className = '',
   active = false,
-  ...props 
+  ...props
 }) => {
-  
+
   // Hardcoded Red Theme (Rose)
+  // Hardcoded Red Theme (Rose) - Futuristic SaaS approach
   const variants = {
-    primary: `bg-rose-600 hover:bg-rose-500 text-white shadow-[0_0_15px_rgba(225,29,72,0.4)] border-transparent font-semibold`,
-    secondary: `bg-transparent border border-rose-500/50 text-rose-500 hover:bg-rose-500/10`,
-    danger: 'bg-red-500/10 border border-red-500/50 text-red-500 hover:bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.15)]',
-    ghost: 'bg-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-white border border-transparent hover:bg-zinc-200 dark:hover:bg-white/5',
+    primary: `bg-rose-600 hover:bg-rose-500 text-white shadow-[0_0_20px_rgba(225,29,72,0.6)] hover:shadow-[0_0_30px_rgba(244,63,94,0.8)] border border-rose-500/50 font-bold transition-all`,
+    secondary: `bg-transparent border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/70 hover:shadow-[0_0_15px_rgba(244,63,94,0.3)] transition-all font-semibold`,
+    danger: 'bg-red-500/10 border border-red-500/50 text-red-500 hover:bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:shadow-[0_0_25px_rgba(239,68,68,0.4)] transition-all font-semibold',
+    ghost: 'bg-transparent text-zinc-400 hover:text-white border border-transparent hover:bg-white/5 transition-all font-semibold',
   };
 
   const sizes = {

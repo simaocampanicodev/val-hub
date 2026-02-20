@@ -42,24 +42,25 @@ const ToastItem: React.FC<ToastProps> = ({ toast, onRemove, themeMode }) => {
   };
 
   const colors = {
-    success: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400',
-    error: 'bg-rose-500/20 border-rose-500/30 text-rose-400',
-    warning: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400',
-    info: 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+    success: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]',
+    error: 'bg-rose-500/10 border-rose-500/20 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.1)]',
+    warning: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.1)]',
+    info: 'bg-zinc-500/10 border-zinc-500/20 text-zinc-300 shadow-[0_0_20px_rgba(113,113,122,0.1)]'
   };
 
   return (
     <div
       className={`
-        flex items-center gap-3 p-4 rounded-xl border backdrop-blur-xl shadow-lg
+        flex items-center gap-3 p-4 rounded-2xl border backdrop-blur-3xl shadow-2xl relative overflow-hidden
         ${colors[toast.type]}
-        ${themeMode === 'dark' ? 'bg-black/40' : 'bg-white/60'}
+        ${themeMode === 'dark' ? 'bg-[#0a0505]/95 backdrop-blur-2xl' : 'bg-white/95 backdrop-blur-2xl text-zinc-800'}
         transition-all duration-300 ease-out
-        ${isExiting ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}
+        ${isExiting ? 'opacity-0 translate-x-full scale-95' : 'opacity-100 translate-x-0 scale-100'}
         min-w-[300px] max-w-[400px]
       `}
     >
-      <div className="flex-shrink-0">
+      <div className="absolute inset-0 pointer-events-none rounded-2xl border-[1px] border-white/[0.05] mix-blend-overlay"></div>
+      <div className="flex-shrink-0 z-10">
         {icons[toast.type]}
       </div>
       <div className="flex-1 text-sm font-medium">

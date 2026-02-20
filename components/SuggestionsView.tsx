@@ -37,7 +37,7 @@ const SuggestionsView = () => {
     <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8 text-center">
         <h2 className={`text-4xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
-          SUGGESTIONS
+          Suggestions
         </h2>
         <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">Share your ideas for the site</p>
       </div>
@@ -58,9 +58,8 @@ const SuggestionsView = () => {
               onChange={e => setTitle(e.target.value)}
               placeholder="Short title for your suggestion"
               maxLength={120}
-              className={`w-full rounded-xl p-3 border outline-none transition-colors ${
-                themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white placeholder:text-zinc-500 focus:border-rose-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-rose-500'
-              }`}
+              className={`w-full rounded-xl p-3 border outline-none transition-colors ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white placeholder:text-zinc-500 focus:border-rose-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-rose-500'
+                }`}
             />
           </div>
           <div>
@@ -73,9 +72,8 @@ const SuggestionsView = () => {
               onChange={e => setCategory(e.target.value)}
               placeholder="Optional"
               maxLength={60}
-              className={`w-full rounded-xl p-3 border outline-none ${
-                themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white placeholder:text-zinc-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400'
-              }`}
+              className={`w-full rounded-xl p-3 border outline-none ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white placeholder:text-zinc-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400'
+                }`}
             />
           </div>
           <div>
@@ -87,9 +85,8 @@ const SuggestionsView = () => {
               onChange={e => setDescription(e.target.value)}
               placeholder="Describe your suggestion in detail..."
               rows={4}
-              className={`w-full rounded-xl p-3 border outline-none resize-none transition-colors ${
-                themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white placeholder:text-zinc-500 focus:border-rose-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-rose-500'
-              }`}
+              className={`w-full rounded-xl p-3 border outline-none resize-none transition-colors ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white placeholder:text-zinc-500 focus:border-rose-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400 focus:border-rose-500'
+                }`}
             />
           </div>
           <div>
@@ -101,9 +98,8 @@ const SuggestionsView = () => {
               onChange={e => setDetails(e.target.value)}
               placeholder="Any extra context..."
               rows={2}
-              className={`w-full rounded-xl p-3 border outline-none resize-none ${
-                themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white placeholder:text-zinc-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400'
-              }`}
+              className={`w-full rounded-xl p-3 border outline-none resize-none ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white placeholder:text-zinc-500' : 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400'
+                }`}
             />
           </div>
           <Button type="submit" disabled={sending || (!title.trim() && !description.trim())} className="w-full sm:w-auto">
@@ -153,11 +149,11 @@ const SuggestionsView = () => {
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm">{t.username}</div>
                         <div className={`text-xs ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>
-                          {new Date(t.timestamp).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit' })} às {new Date(t.timestamp).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit'})}
+                          {new Date(t.timestamp).toLocaleDateString()} at {new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <p className={`text-sm font-bold ${themeMode === 'dark' ? 'text-zinc-100' : 'text-zinc-900'}`}>
                         {t.subject || (t.parts && t.parts.title) || 'Suggestion'}
@@ -190,9 +186,9 @@ const SuggestionsView = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm text-emerald-400">{t.reply.replierUsername}</div>
+                        <div className="font-semibold text-sm text-rose-400">{t.reply.replierUsername}</div>
                         <div className={`text-xs ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>
-                          {new Date(t.reply.repliedAt).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit' })} às {new Date(t.reply.repliedAt).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit'})}
+                          {new Date(t.reply.repliedAt).toLocaleDateString()} at {new Date(t.reply.repliedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                         <p className={`text-sm mt-2 ${themeMode === 'dark' ? 'text-zinc-300' : 'text-zinc-800'}`}>
                           {t.reply.text}

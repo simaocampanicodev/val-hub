@@ -12,16 +12,17 @@ import SuggestionsView from './components/SuggestionsView';
 import Auth from './components/Auth';
 import QuestsView from './components/QuestsView';
 import FriendsView from './components/FriendsView';
+import Home from './components/Home';
 import { ToastContainer } from './components/ui/Toast';
 
 const AppContent = () => {
   const { matchState, isAuthenticated, viewProfileId, setViewProfileId, toasts, removeToast, themeMode, hasDashboardAccess } = useGame();
-  const [currentView, setCurrentView] = useState('queue');
+  const [currentView, setCurrentView] = useState('home');
 
   // If viewProfileId is set, force switch to profile view
   useEffect(() => {
     if (viewProfileId) {
-        setCurrentView('profile');
+      setCurrentView('profile');
     }
   }, [viewProfileId]);
 
@@ -29,52 +30,55 @@ const AppContent = () => {
   const handleSetCurrentView = (view: string) => {
     setCurrentView(view);
     if (view !== 'profile') {
-        setViewProfileId(null);
+      setViewProfileId(null);
     }
   };
 
   if (!isAuthenticated) {
-      return (
-          <Layout currentView="auth" setCurrentView={() => {}}>
-              <Auth />
-          </Layout>
-      );
+    return (
+      <Layout currentView="auth" setCurrentView={() => { }}>
+        <Auth />
+      </Layout>
+    );
   }
 
   let content;
 
   if (currentView === 'queue' && matchState && matchState.phase !== 'FINISHED') {
-     content = <MatchInterface />;
+    content = <MatchInterface />;
   } else if (matchState && matchState.phase === 'FINISHED' && currentView === 'queue') {
-     content = <MatchInterface />;
+    content = <MatchInterface />;
   } else {
     switch (currentView) {
-        case 'queue':
-            content = <Queue />;
-            break;
-        case 'profile':
-            content = <Profile />;
-            break;
-        case 'leaderboard':
-            content = <Leaderboard />;
-            break;
-        case 'history':
-            content = <MatchHistory />;
-            break;
-        case 'quests':
-            content = <QuestsView />;
-            break;
-        case 'friends':
-            content = <FriendsView />;
-            break;
-        case 'suggestions':
-            content = <SuggestionsView />;
-            break;
-        case 'dashboard':
-            content = <AdminDashboard />;
-            break;
-        default:
-            content = <Queue />;
+      case 'home':
+        content = <Home setCurrentView={setCurrentView} />;
+        break;
+      case 'queue':
+        content = <Queue />;
+        break;
+      case 'profile':
+        content = <Profile />;
+        break;
+      case 'leaderboard':
+        content = <Leaderboard />;
+        break;
+      case 'history':
+        content = <MatchHistory />;
+        break;
+      case 'quests':
+        content = <QuestsView />;
+        break;
+      case 'friends':
+        content = <FriendsView />;
+        break;
+      case 'suggestions':
+        content = <SuggestionsView />;
+        break;
+      case 'dashboard':
+        content = <AdminDashboard />;
+        break;
+      default:
+        content = <Home setCurrentView={setCurrentView} />;
     }
   }
 
@@ -85,8 +89,8 @@ const AppContent = () => {
           {content}
         </div>
       </Layout>
-      <ToastContainer 
-        toasts={toasts} 
+      <ToastContainer
+        toasts={toasts}
         onRemove={removeToast}
         themeMode={themeMode}
       />

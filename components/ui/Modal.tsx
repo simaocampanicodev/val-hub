@@ -41,22 +41,23 @@ const Modal: React.FC<ModalProps> = ({
   };
 
   const modalContent = (
-    <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center min-h-screen min-w-full bg-black/80 backdrop-blur-sm p-4"
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center min-h-screen min-w-full bg-black/60 backdrop-blur-xl p-4"
       onClick={onClose}
     >
-      <div 
+      <div
         className={`
-          relative max-w-md w-full max-h-[90vh] overflow-auto rounded-3xl border shadow-2xl
-          ${themeMode === 'dark' ? 'bg-black/90 border-white/10' : 'bg-white border-zinc-200'}
+          relative max-w-md w-full max-h-[90vh] overflow-auto rounded-[2rem] border shadow-[0_0_50px_rgba(0,0,0,0.5)]
+          ${themeMode === 'dark' ? 'bg-[#0a0505]/90 border-white/5 backdrop-blur-2xl' : 'bg-white/90 border-zinc-200 backdrop-blur-2xl'}
           ${variantColors[variant]}
-          animate-in zoom-in duration-200
+          animate-in zoom-in-95 duration-300
         `}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="absolute inset-0 pointer-events-none rounded-[2rem] border-[1px] border-white/[0.05] mix-blend-overlay"></div>
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
+          className="absolute top-5 right-5 text-zinc-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full hover:bg-white/10 z-10"
         >
           <X className="w-5 h-5" />
         </button>
@@ -73,8 +74,8 @@ const Modal: React.FC<ModalProps> = ({
             <Button variant="ghost" onClick={onClose}>
               {cancelText}
             </Button>
-            <Button 
-              variant={variant === 'danger' ? 'danger' : 'primary'} 
+            <Button
+              variant={variant === 'danger' ? 'danger' : 'primary'}
               onClick={handleConfirm}
             >
               {confirmText}

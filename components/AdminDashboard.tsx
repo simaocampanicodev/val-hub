@@ -62,9 +62,9 @@ const AdminDashboard = () => {
   const realUsers = allUsers.filter(u => !u.isBot);
   const filteredUsers = userSearch.trim()
     ? realUsers.filter(u =>
-        u.username.toLowerCase().includes(userSearch.toLowerCase()) ||
-        u.id.toLowerCase().includes(userSearch.toLowerCase())
-      )
+      u.username.toLowerCase().includes(userSearch.toLowerCase()) ||
+      u.id.toLowerCase().includes(userSearch.toLowerCase())
+    )
     : realUsers;
 
   const onlineUsers = realUsers.filter(u => onlineUserIds.has(u.id));
@@ -88,12 +88,8 @@ const AdminDashboard = () => {
   return (
     <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8 text-center">
-        <h2 className={`text-4xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
-          {isHelperOnly ? 'TICKETS' : 'DASHBOARD'}
-        </h2>
-        <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">
-          {isHelperOnly ? 'Support & Suggestions' : 'Admin & Mod Panel'}
-        </p>
+        <h2 className={`text-4xl font-display font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>Dashboard</h2>
+        <p className="text-zinc-500 uppercase tracking-widest text-xs mt-2">Manage Users & Platform</p>
       </div>
 
       {!isHelperOnly && (
@@ -102,13 +98,12 @@ const AdminDashboard = () => {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                activeTab === id
-                  ? 'bg-rose-500 text-white shadow-lg'
-                  : themeMode === 'dark'
-                    ? 'text-zinc-400 hover:text-white hover:bg-white/10'
-                    : 'text-zinc-600 hover:text-black hover:bg-black/5'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === id
+                ? 'bg-rose-500 text-white shadow-lg'
+                : themeMode === 'dark'
+                  ? 'text-zinc-400 hover:text-white hover:bg-white/10'
+                  : 'text-zinc-600 hover:text-black hover:bg-black/5'
+                }`}
             >
               <Icon className="w-4 h-4" />
               {label}
@@ -131,9 +126,8 @@ const AdminDashboard = () => {
                 placeholder="Search username or ID..."
                 value={userSearch}
                 onChange={e => setUserSearch(e.target.value)}
-                className={`w-full sm:w-64 pl-9 pr-4 py-2 rounded-xl text-sm outline-none border ${
-                  themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-white border-zinc-200 text-zinc-900'
-                }`}
+                className={`w-full sm:w-64 pl-9 pr-4 py-2 rounded-xl text-sm outline-none border ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-white border-zinc-200 text-zinc-900'
+                  }`}
               />
             </div>
           </div>
@@ -147,9 +141,8 @@ const AdminDashboard = () => {
                   <div
                     key={user.id}
                     onClick={() => setViewProfileId(user.id)}
-                    className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-colors ${
-                      themeMode === 'dark' ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-black/5 border-black/5 hover:bg-black/10'
-                    }`}
+                    className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-colors ${themeMode === 'dark' ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-black/5 border-black/5 hover:bg-black/10'
+                      }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -197,9 +190,8 @@ const AdminDashboard = () => {
               queue.map((user, i) => (
                 <div
                   key={user.id}
-                  className={`flex items-center justify-between p-3 rounded-xl border ${
-                    themeMode === 'dark' ? 'bg-white/5 border-white/5' : 'bg-black/5 border-black/5'
-                  }`}
+                  className={`flex items-center justify-between p-3 rounded-xl border ${themeMode === 'dark' ? 'bg-white/5 border-white/5' : 'bg-black/5 border-black/5'
+                    }`}
                 >
                   <span className="text-zinc-500 font-mono text-sm">#{i + 1}</span>
                   <div className="flex items-center gap-3">
@@ -230,9 +222,8 @@ const AdminDashboard = () => {
                 <div
                   key={user.id}
                   onClick={() => setViewProfileId(user.id)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                    themeMode === 'dark' ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-black/5 border-black/5 hover:bg-black/10'
-                  }`}
+                  className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${themeMode === 'dark' ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-black/5 border-black/5 hover:bg-black/10'
+                    }`}
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <div className="w-8 h-8 rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center">
@@ -260,17 +251,15 @@ const AdminDashboard = () => {
                 tickets.map(ticket => (
                   <div
                     key={ticket.id}
-                    className={`p-4 rounded-xl border ${
-                      themeMode === 'dark' ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'
-                    }`}
+                    className={`p-4 rounded-xl border ${themeMode === 'dark' ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'
+                      }`}
                   >
                     <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
                       <span className={`font-bold ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
                         {ticket.username}
                       </span>
-                      <span className={`text-[10px] uppercase px-2 py-0.5 rounded ${
-                        ticket.type === 'suggestion' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'
-                      }`}>
+                      <span className={`text-[10px] uppercase px-2 py-0.5 rounded ${ticket.type === 'suggestion' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'
+                        }`}>
                         {ticket.type === 'suggestion' ? 'Suggestion' : 'Support'}
                       </span>
                     </div>
@@ -377,9 +366,8 @@ const AdminDashboard = () => {
                 value={roleUserId}
                 onChange={e => setRoleUserId(e.target.value)}
                 placeholder="e.g. txger. or user ID"
-                className={`w-full rounded-xl p-3 border outline-none ${
-                  themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-white border-zinc-200 text-zinc-900'
-                }`}
+                className={`w-full rounded-xl p-3 border outline-none ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-white border-zinc-200 text-zinc-900'
+                  }`}
               />
             </div>
             <div className="min-w-[220px]">
@@ -387,9 +375,8 @@ const AdminDashboard = () => {
               <select
                 value={roleAndVerified}
                 onChange={e => setRoleAndVerified(e.target.value)}
-                className={`w-full rounded-xl px-4 py-3.5 border outline-none text-base font-medium ${
-                  themeMode === 'dark' ? 'bg-zinc-800 border-white/10 text-white' : 'bg-zinc-800 border-white/10 text-white'
-                }`}
+                className={`w-full rounded-xl px-4 py-3.5 border outline-none text-base font-medium ${themeMode === 'dark' ? 'bg-zinc-800 border-white/10 text-white' : 'bg-zinc-800 border-white/10 text-white'
+                  }`}
               >
                 <option value="user">User</option>
                 <option value="user_verified">User (Verified)</option>
