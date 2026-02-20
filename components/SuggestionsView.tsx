@@ -131,16 +131,68 @@ const SuggestionsView = () => {
           <h3 className="text-sm font-bold uppercase tracking-widest">Answered suggestions</h3>
         </div>
         {tickets && tickets.filter(t => t.type === 'suggestion' && t.reply).length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {tickets
               .filter(t => t.type === 'suggestion' && t.reply)
+              .sort((a, b) => (b.reply?.repliedAt ?? 0) - (a.reply?.repliedAt ?? 0))
               .map(t => (
-                <div key={t.id} className="p-3 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold">{t.subject || (t.parts && t.parts.title) || 'Suggestion'}</div>
-                    <div className="text-xs text-zinc-500">by {t.username} • answered by {t.reply?.replierUsername}</div>
-                    <div className="mt-2 text-zinc-300 text-sm">{t.reply?.text}</div>
+                <div key={t.id} className={`p-4 rounded-xl border ${themeMode === 'dark' ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'}`}>
+                  {/* Original Suggestion */}
+                  <div className="mb-4 pb-4 border-b border-white/10">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {t.username[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm">{t.username}</div>
+                        <div className={`text-xs ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                          {new Date(t.timestamp).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <p className={`text-sm font-bold ${themeMode === 'dark' ? 'text-zinc-100' : 'text-zinc-900'}`}>
+                        {t.subject || (t.parts && t.parts.title) || 'Suggestion'}
+                      </p>
+                      {t.message && (
+                        <p className={`text-sm ${themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-700'}`}>
+                          {t.message}
+                        </p>
+                      )}
+                      {t.parts && Object.keys(t.parts).length > 0 && (
+                        <div className={`text-xs space-y-1 ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                          {Object.entries(t.parts).map(([key, value]) => (
+                            <div key={key}>
+                              <span className="font-semibold">{key}:</span> {value}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Reply */}
+                  {t.reply && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-zinc-800 overflow-hidden flex items-center justify-center flex-shrink-0">
+                        {t.reply.replierAvatarUrl ? (
+                          <img src={t.reply.replierAvatarUrl} alt={t.reply.replierUsername} className="w-full h-full object-cover" />
+                        ) : (
+                          t.reply.replierUsername[0]
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm text-emerald-400">{t.reply.replierUsername}</div>
+                        <div className={`text-xs ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                          {new Date(t.reply.repliedAt).toLocaleString()}
+                        </div>
+                        <p className={`text-sm mt-2 ${themeMode === 'dark' ? 'text-zinc-300' : 'text-zinc-800'}`}>
+                          {t.reply.text}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
           </div>
