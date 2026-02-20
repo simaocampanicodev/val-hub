@@ -4,6 +4,7 @@ import { getRankInfo } from '../services/gameService';
 import Card from './ui/Card';
 import { RankRequirementsModal } from './RankRequirementsModal';
 import { Info } from 'lucide-react';
+import TopPlayersDisplay from './TopPlayersDisplay';
 
 const Leaderboard = () => {
     const { allUsers, themeMode, setViewProfileId } = useGame();
@@ -65,6 +66,9 @@ const Leaderboard = () => {
                         </button>
                     </div>
                 </div>
+
+                {/* Top 3 Players Display */}
+                <TopPlayersDisplay sortBy={sortBy} />
 
                 <Card noPadding className="overflow-hidden">
                     <table className="w-full text-left border-collapse">
