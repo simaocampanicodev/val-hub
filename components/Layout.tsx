@@ -29,7 +29,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children }
       setQueueElapsed(diff > 0 ? diff : 0);
     };
     update();
-    const id = setInterval(update, 500);
+    const id = setInterval(update, 100);
     return () => clearInterval(id);
   }, [isInQueue, queueJoinedAt]);
 

@@ -220,6 +220,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const ts: any = d.joinedAt;
           if (ts && typeof ts.toMillis === 'function') {
             currentUserJoinedAt = ts.toMillis();
+          } else if (typeof ts === 'number') {
+            currentUserJoinedAt = ts;
           } else {
             currentUserJoinedAt = Date.now();
           }
