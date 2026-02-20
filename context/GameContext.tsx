@@ -180,7 +180,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     console.log('🔥 Listener de usuários iniciado');
     const q = query(collection(db, COLLECTIONS.USERS), orderBy('points', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const users: User[] = snapshot.docs.map(doc => {
+      const users: any[] = snapshot.docs.map(doc => {
         const d = doc.data();
         return {
           id: doc.id, username: d.username, email: d.email,
@@ -194,7 +194,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           lastPointsChange: d.lastPointsChange, lastSeenAt: d.lastSeenAt,
           role: (d.role as UserRole) || 'user', verified: !!d.verified,
           trackerUrl: d.trackerUrl, trackerAddedAt: d.trackerAddedAt,
-          twitchUrl: d.twitchUrl, twitchAddedAt: d.twitchAddedAt
+          twitchUrl: d.twitchUrl, twitchAddedAt: d.twitchAddedAt,
+          created_at: d.created_at ? (typeof d.created_at.toMillis === 'function' ? d.created_at.toMillis() : d.created_at) : null
         };
       });
       // Preserve bots (they exist only in queue/match, not in Firestore USERS) so they don't disappear
