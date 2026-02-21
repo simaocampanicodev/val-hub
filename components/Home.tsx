@@ -7,7 +7,7 @@ import { Play, Trophy, Target, TrendingUp, History, Map as MapIcon, ChevronRight
 import { MatchRecord, Quest } from '../types';
 import { QUEST_POOL } from '../constants';
 
-const Home = ({ setCurrentView }: { setCurrentView: (view: string) => void }) => {
+const Home = ({ setCurrentView }: { setCurrentView: (view: string, matchId?: string) => void }) => {
   const { currentUser, allUsers, matchHistory, themeMode } = useGame();
 
   // Calculated properties
@@ -258,7 +258,7 @@ const Home = ({ setCurrentView }: { setCurrentView: (view: string) => void }) =>
                   ? 'bg-[#0a0a0a] border-white/5 hover:border-white/10'
                   : 'bg-white border-zinc-200 hover:border-zinc-300'
                   } shadow-lg`}
-                onClick={() => setCurrentView('history')}
+                onClick={() => setCurrentView('history', lastMatch.id)}
               >
                 {/* Gradient Background */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${lastMatchWon

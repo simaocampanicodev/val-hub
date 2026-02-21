@@ -29,6 +29,45 @@ const TYPE_BG: Record<NotificationType, string> = {
   FRIEND_MESSAGE: 'bg-cyan-500/10',
 };
 
+/** Map a notification type to the view where its content lives */
+function getTargetView(type: NotificationType): string | null {
+  switch (type) {
+    case 'FRIEND_REQUEST_RECEIVED':
+    case 'FRIEND_REQUEST_ACCEPTED':
+    case 'FRIEND_REQUEST_REJECTED':
+    case 'FRIEND_REMOVED':
+    case 'FRIEND_ADDED':
+    case 'FRIEND_MESSAGE':
+      return 'friends';
+    case 'SUGGESTION_LIKED':
+      return 'suggestions';
+    case 'QUEST_READY':
+      return 'quests';
+    case 'MATCH_ENDED':
+      return 'history';
+    case 'COMMEND_RECEIVED':
+      return 'profile';
+    default:
+      return null;
+  }
+}
+
+/** Notification types that should be auto-cleared when viewing a specific tab */
+const VIEW_CLEAR_MAP: Record<string, NotificationType[]> = {
+  friends: [
+    'FRIEND_REQUEST_RECEIVED',
+    'FRIEND_REQUEST_ACCEPTED',
+    'FRIEND_REQUEST_REJECTED',
+    'FRIEND_REMOVED',
+    'FRIEND_ADDED',
+    'FRIEND_MESSAGE',
+  ],
+  suggestions: ['SUGGESTION_LIKED'],
+  quests: ['QUEST_READY'],
+  history: ['MATCH_ENDED'],
+  profile: ['COMMEND_RECEIVED'],
+};
+
 function formatRelative(ts: number) {
   const diff = Date.now() - ts;
   if (diff < 60_000) return 'just now';
@@ -37,13 +76,35 @@ function formatRelative(ts: number) {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
-const NotificationBell: React.FC = () => {
-  const { notifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications, themeMode } = useGame();
+interface NotificationBellProps {
+  currentView: string;
+  setCurrentView: (view: string) => void;
+}
+
+const NotificationBell: React.FC<NotificationBellProps> = ({ currentView, setCurrentView }) => {
+  const { notifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications, clearNotificationsByType, themeMode } = useGame();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const unread = notifications.filter(n => !n.read).length;
   const dark = themeMode === 'dark';
+
+  // ── Auto-clear notifications when the user is on the relevant view ──
+  useEffect(() => {
+    const typesToClear = VIEW_CLEAR_MAP[currentView];
+    if (!typesToClear || typesToClear.length === 0) return;
+
+    // Find notifications that match the current view and are unread
+    const matching = notifications.filter(
+      n => !n.read && typesToClear.includes(n.type)
+    );
+    if (matching.length === 0) return;
+
+    // Clear each matching type
+    typesToClear.forEach(type => {
+      clearNotificationsByType(type);
+    });
+  }, [currentView, notifications, clearNotificationsByType]);
 
   // Close on outside click
   useEffect(() => {
@@ -56,6 +117,16 @@ const NotificationBell: React.FC = () => {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
+
+  /** Click a notification: navigate to the relevant view, mark read, close panel */
+  const handleNotificationClick = (n: AppNotification) => {
+    markNotificationRead(n.id);
+    const targetView = getTargetView(n.type);
+    if (targetView) {
+      setCurrentView(targetView);
+    }
+    setOpen(false);
+  };
 
   return (
     <div className="relative" ref={panelRef}>
@@ -130,7 +201,7 @@ const NotificationBell: React.FC = () => {
               notifications.map(n => (
                 <button
                   key={n.id}
-                  onClick={() => markNotificationRead(n.id)}
+                  onClick={() => handleNotificationClick(n)}
                   className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors border-b last:border-0 ${dark ? 'border-white/5' : 'border-black/5'
                     } ${!n.read
                       ? dark ? 'bg-white/[0.04]' : 'bg-black/[0.03]'

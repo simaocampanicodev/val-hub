@@ -281,7 +281,7 @@ const MatchDetailModal: React.FC<MatchDetailProps> = ({ match, currentUserId, th
 
 /* ─────────────────────── Main Component ──────────────────────── */
 
-const MatchHistory = () => {
+const MatchHistory = ({ initialMatchId, onMatchOpened }: { initialMatchId?: string | null; onMatchOpened?: () => void }) => {
     const { matchHistory, currentUser, themeMode } = useGame();
     const [filter, setFilter] = useState<'all' | 'mine'>('mine');
     const [searchQuery, setSearchQuery] = useState('');
@@ -292,6 +292,17 @@ const MatchHistory = () => {
         const timer = setTimeout(() => setIsLoading(false), 800);
         return () => clearTimeout(timer);
     }, []);
+
+    // Auto-open match detail when navigated from Home's Last Match card
+    useEffect(() => {
+        if (initialMatchId && !isLoading && matchHistory.length > 0) {
+            const match = matchHistory.find(m => m.id === initialMatchId);
+            if (match) {
+                setSelectedMatch(match);
+                onMatchOpened?.();
+            }
+        }
+    }, [initialMatchId, isLoading, matchHistory]);
 
     const filteredHistory = useMemo(() => {
         let list = matchHistory;

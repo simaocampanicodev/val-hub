@@ -18,6 +18,7 @@ import { ToastContainer } from './components/ui/Toast';
 const AppContent = () => {
   const { matchState, isAuthenticated, viewProfileId, setViewProfileId, toasts, removeToast, themeMode, hasDashboardAccess } = useGame();
   const [currentView, setCurrentView] = useState('home');
+  const [pendingMatchId, setPendingMatchId] = useState<string | null>(null);
 
   // If viewProfileId is set, force switch to profile view
   useEffect(() => {
@@ -27,10 +28,16 @@ const AppContent = () => {
   }, [viewProfileId]);
 
   // If switching away from profile, clear the selected ID
-  const handleSetCurrentView = (view: string) => {
+  const handleSetCurrentView = (view: string, matchId?: string) => {
     setCurrentView(view);
     if (view !== 'profile') {
       setViewProfileId(null);
+    }
+    // Track pending match ID for history deep-link
+    if (view === 'history' && matchId) {
+      setPendingMatchId(matchId);
+    } else if (view !== 'history') {
+      setPendingMatchId(null);
     }
   };
 
@@ -54,7 +61,7 @@ const AppContent = () => {
   } else {
     switch (currentView) {
       case 'home':
-        content = <Home setCurrentView={setCurrentView} />;
+        content = <Home setCurrentView={handleSetCurrentView} />;
         break;
       case 'queue':
         content = <Queue />;
@@ -66,7 +73,7 @@ const AppContent = () => {
         content = <Leaderboard />;
         break;
       case 'history':
-        content = <MatchHistory />;
+        content = <MatchHistory initialMatchId={pendingMatchId} onMatchOpened={() => setPendingMatchId(null)} />;
         break;
       case 'quests':
         content = <QuestsView />;
@@ -81,7 +88,7 @@ const AppContent = () => {
         content = <AdminDashboard />;
         break;
       default:
-        content = <Home setCurrentView={setCurrentView} />;
+        content = <Home setCurrentView={handleSetCurrentView} />;
     }
   }
 

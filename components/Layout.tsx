@@ -125,7 +125,7 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children }
                     {isAuthenticated && (
                         <>
                             {/* Notification bell */}
-                            <NotificationBell />
+                            <NotificationBell currentView={currentView} setCurrentView={setCurrentView} />
 
                             {/* User Profile Area */}
                             <button
