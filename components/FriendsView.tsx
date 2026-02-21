@@ -15,6 +15,25 @@ const FriendsView = () => {
     const [chatMessages, setChatMessages] = useState<{[key: string]: Array<{text: string, sender: string, timestamp: number}>}>({});
     const [isLoading, setIsLoading] = useState(true);
 
+    // Load chat history from localStorage on mount
+    React.useEffect(() => {
+        const savedChats = localStorage.getItem('friendChatHistory');
+        if (savedChats) {
+            try {
+                setChatMessages(JSON.parse(savedChats));
+            } catch (e) {
+                console.error('Failed to load chat history:', e);
+            }
+        }
+    }, []);
+
+    // Save chat history to localStorage whenever it changes
+    React.useEffect(() => {
+        if (Object.keys(chatMessages).length > 0) {
+            localStorage.setItem('friendChatHistory', JSON.stringify(chatMessages));
+        }
+    }, [chatMessages]);
+
     // Simulate loading
     React.useEffect(() => {
         const timer = setTimeout(() => {
@@ -148,13 +167,6 @@ const FriendsView = () => {
                                                         : 'bg-zinc-50 border-zinc-200 hover:bg-white hover:border-zinc-300'
                                                 } ${selectedChat === friend.id ? 'ring-2 ring-rose-500/50' : ''}`}
                                             >
-                                                {/* Online Indicator */}
-                                                {onlineUserIds?.has(friend.id) && (
-                                                    <div className="absolute top-4 left-4">
-                                                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                                                    </div>
-                                                )}
-
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-4">
                                                         <div className="relative">
@@ -275,8 +287,22 @@ const FriendsView = () => {
                                                 <p className={`text-sm ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>Start a conversation</p>
                                             </div>
                                         ) : (
-                                            getChatWithFriend(selectedChat).map((msg, idx) => (
-                                                <div key={idx} className={`mb-3 ${msg.sender === currentUser.id ? 'text-right' : 'text-left'}`}>
+                                            getChatWithFriend(selectedChat).map((msg, idx) => {
+                                                const sender = allUsers.find(u => u.id === msg.sender);
+                                                return (
+                                                <div key={idx} className={`mb-3 flex items-end gap-2 ${msg.sender === currentUser.id ? 'flex-row-reverse' : 'flex-row'}`}>
+                                                    {/* Profile Picture */}
+                                                    <div className={`w-6 h-6 rounded-full flex-shrink-0 overflow-hidden ${
+                                                        themeMode === 'dark' ? 'bg-zinc-800' : 'bg-zinc-200'
+                                                    }`}>
+                                                        {sender?.avatarUrl ? (
+                                                            <img src={sender.avatarUrl} className="w-full h-full object-cover" alt="" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-xs">
+                                                                {sender?.username?.[0]?.toUpperCase() || '?'}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     <div className={`inline-block px-3 py-2 rounded-2xl text-sm max-w-[70%] ${
                                                         msg.sender === currentUser.id
                                                             ? 'bg-rose-500 text-white'
@@ -285,7 +311,8 @@ const FriendsView = () => {
                                                         {msg.text}
                                                     </div>
                                                 </div>
-                                            ))
+                                                );
+                                            })
                                         )}
                                     </div>
 

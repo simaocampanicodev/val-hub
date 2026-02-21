@@ -18,7 +18,7 @@ import {
 import { UserRole } from '../types';
 import { getRankInfo } from '../services/gameService';
 
-type TabId = 'users' | 'queue' | 'online' | 'tickets' | 'roles';
+type TabId = 'users' | 'queue' | 'online' | 'tickets' | 'suggestions' | 'roles';
 
 const AdminDashboard = () => {
   const {

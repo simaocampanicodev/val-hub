@@ -121,6 +121,12 @@ export interface Ticket {
   message?: string;
   parts?: Record<string, string>;
   timestamp: number;
+  /** Likes for suggestions */
+  likes?: string[];
+  /** Category for suggestions */
+  category?: string;
+  /** Soft delete flag */
+  deleted?: boolean;
   /** Reply added by staff/helpers */
   reply?: {
     text: string;

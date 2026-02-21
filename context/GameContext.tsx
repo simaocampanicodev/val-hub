@@ -148,7 +148,8 @@ export interface GameContextType {
     role: UserRole,
     verified: boolean,
   ) => Promise<void>;
-  resetDailyQuests: () => void; // <-- Add this line
+  resetDailyQuests: () => void;
+  updateTicket: (ticketId: string, updates: Partial<Ticket>) => Promise<void>;
 }
 
 const initialUser: User = {
@@ -222,6 +223,7 @@ export const GameContext = React.createContext<GameContextType>({
   onlineUserIds: new Set(),
   setUserRole: async () => {},
   resetDailyQuests: () => {},
+  updateTicket: async () => {},
 });
 
 export const GameProvider: React.FC<{ children: ReactNode }> = ({
@@ -801,19 +803,29 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
     return () => unsubscribe();
   }, []);
 
-  // 🔊 TOCAR SOM QUANDO MATCH É ENCONTRADA (para TODOS os jogadores)
+  // 🔊 TOCAR SOM QUANDO MATCH É ENCONTRADA (apenas uma vez)
+  const soundPlayedRef = useRef<{[key: string]: boolean}>({});
+  
   useEffect(() => {
-    if (matchState?.phase === MatchPhase.READY_CHECK) {
+    if (matchState?.phase === MatchPhase.READY_CHECK && !soundPlayedRef.current[matchState.id]) {
       try {
         console.log("🔊 Tocando som de match encontrada...");
         const audio = new Audio(MATCH_FOUND_SOUND);
         audio.volume = 0.5;
         audio.play().catch((e) => console.log("⚠️ Navegador bloqueou som:", e));
+        soundPlayedRef.current[matchState.id] = true;
       } catch (e) {
         console.log("⚠️ Erro ao tocar som");
       }
     }
-  }, [matchState?.phase]);
+    
+    // Reset quando sai da fase READY_CHECK
+    if (matchState?.phase !== MatchPhase.READY_CHECK) {
+      if (matchState?.id && soundPlayedRef.current[matchState.id]) {
+        delete soundPlayedRef.current[matchState.id];
+      }
+    }
+  }, [matchState?.phase, matchState?.id]);
 
   // ⚡ Auto-start draft when all ready
   useEffect(() => {
@@ -2591,6 +2603,19 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
     generateQuestsIfNeeded(true);
   };
 
+  const updateTicket = useCallback(
+    async (ticketId: string, updates: Partial<Ticket>) => {
+      try {
+        const ticketRef = doc(db, COLLECTIONS.TICKETS, ticketId);
+        await updateDoc(ticketRef, updates);
+      } catch (e: any) {
+        console.error('Failed to update ticket:', e);
+        showToast('Failed to update ticket', 'error');
+      }
+    },
+    [showToast]
+  );
+
   return (
     <GameContext.Provider
       value={{
@@ -2644,6 +2669,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
         onlineUserIds,
         setUserRole,
         resetDailyQuests,
+        updateTicket,
       }}
     >
       {children}

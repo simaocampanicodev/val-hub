@@ -90,9 +90,12 @@ const Layout: React.FC<LayoutProps> = ({ currentView, setCurrentView, children }
                             VBolt
                         </span>
                         {matchState && matchState.phase !== 'FINISHED' && (
-                            <span className="ml-2 px-2 py-0.5 rounded bg-rose-500 text-white text-[10px] uppercase font-bold animate-pulse">
-                                Match Live
-                            </span>
+                            <div className="ml-2 flex items-center">
+                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-2"></div>
+                                <span className="px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500/20 to-rose-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] uppercase font-bold tracking-wider">
+                                    IN PROGRESS
+                                </span>
+                            </div>
                         )}
                     </div>
 
