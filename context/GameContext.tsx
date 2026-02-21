@@ -1264,6 +1264,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
         .join(", "),
     );
 
+    // Process quest progress for all players
+    console.log("📋 Processing quest progress for all players...");
+    for (const player of [...validWinningTeam, ...validLosingTeam]) {
+      // Process WIN_MATCHES quest for winners
+      if (validWinningTeam.includes(player)) {
+        processQuestProgress("WIN_MATCHES", 1);
+      }
+      // Process PLAY_MATCHES quest for all players
+      processQuestProgress("PLAY_MATCHES", 1);
+    }
+
     // ⭐ Adicionar pontos ao record antes de salvar
     const recordWithPoints: MatchRecord = {
       ...record,
@@ -1370,17 +1381,17 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
         !currentUser.activeQuests || currentUser.activeQuests.length === 0;
 
       if (!forceReset && !hasNoQuests && !dailyExpired && !monthlyExpired) {
-        // Verificar se temos exatamente 3 quests diárias, incluindo a q_daily_play_3
+        // Verificar se temos exatamente 3 quests diárias, incluindo a q_daily_win_1
         const currentDailyQuests = currentUser.activeQuests?.filter((uq) =>
           QUEST_POOL.find((q) => q.id === uq.questId)?.category === "DAILY"
         ) || [];
 
-        // Se não tivermos q_daily_play_3, adicioná-la
-        if (!currentDailyQuests.some((uq) => uq.questId === "q_daily_play_3")) {
+        // Se não tivermos q_daily_win_1, adicioná-la
+        if (!currentDailyQuests.some((uq) => uq.questId === "q_daily_win_1")) {
           const next = [
             ...currentUser.activeQuests,
             {
-              questId: "q_daily_play_3",
+              questId: "q_daily_win_1",
               progress: 0,
               completed: false,
               claimed: false,
@@ -1434,24 +1445,20 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
             }));
         };
         // Preserve unique quests from current user's active quests instead of resetting them
-        const currentUniqueQuests = (currentUser.activeQuests || []).filter(
-          (uq) =>
-            QUEST_POOL.find((q) => q.id === uq.questId)?.category === "UNIQUE",
+        const currentUniqueQuests = (currentUser.activeQuests || []).filter((uq) =>
+          QUEST_POOL.find((q) => q.id === uq.questId)?.category === "UNIQUE"
         );
-
-        // ✅ Garantir sempre 3 quests diárias, incluindo 'q_daily_play_3'
-        const play3Quest = dailyQuests.find(q => q.id === 'q_daily_play_3');
-        const otherDailyQuests = dailyQuests.filter(q => q.id !== 'q_daily_play_3');
         
-        // Escolher 2 quests aleatórias das outras diárias
+        const play3Quest = dailyQuests.find(q => q.id === 'q_daily_win_1');
+        const otherDailyQuests = dailyQuests.filter(q => q.id !== 'q_daily_win_1');
+        
         const selectedOtherDailies = pick(otherDailyQuests, 2);
         
-        // Garantir que temos sempre a q_daily_play_3
         const newDailies = [
           ...selectedOtherDailies, 
-          { questId: 'q_daily_play_3', progress: 0, completed: false, claimed: false }
+          { questId: 'q_daily_win_1', progress: 0, completed: false, claimed: false }
         ];
-
+        
         next = [
           ...newDailies,
           ...pick(monthlyQuests, 2),
@@ -1484,15 +1491,15 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
         if (dailyExpired) {
           const existingDailyIds = next.filter(uq => QUEST_POOL.find(q => q.id === uq.questId)?.category === 'DAILY').map(uq => uq.questId);
           
-          // Se não tivermos q_daily_play_3, garantir que ela seja adicionada
-          if (!existingDailyIds.includes('q_daily_play_3')) {
-            next.push({ questId: 'q_daily_play_3', progress: 0, completed: false, claimed: false });
+          // Se não tivermos q_daily_win_1, garantir que ela seja adicionada
+          if (!existingDailyIds.includes('q_daily_win_1')) {
+            next.push({ questId: 'q_daily_win_1', progress: 0, completed: false, claimed: false });
           }
           
           // Garantir que temos sempre 3 quests diárias no total
           const currentDailyCount = next.filter(uq => QUEST_POOL.find(q => q.id === uq.questId)?.category === 'DAILY').length;
           if (currentDailyCount < 3) {
-            const availableDaily = dailyQuests.filter(q => !existingDailyIds.includes(q.id) && q.id !== 'q_daily_play_3');
+            const availableDaily = dailyQuests.filter(q => !existingDailyIds.includes(q.id) && q.id !== 'q_daily_win_1');
             const toAdd = availableDaily.sort(() => Math.random() - 0.5).slice(0, 3 - currentDailyCount);
             toAdd.forEach(q => next.push({ questId: q.id, progress: 0, completed: false, claimed: false }));
           }
@@ -2416,12 +2423,19 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
 
   const resetMatch = async () => {
     console.log("🏠 Voltando ao lobby...");
+    const matchIdToDelete = currentMatchIdRef.current;
     currentMatchIdRef.current = null;
     setMatchState(null);
-    if (currentMatchIdRef.current)
-      await deleteDoc(
-        doc(db, COLLECTIONS.ACTIVE_MATCHES, currentMatchIdRef.current),
-      );
+    if (matchIdToDelete) {
+      try {
+        await deleteDoc(
+          doc(db, COLLECTIONS.ACTIVE_MATCHES, matchIdToDelete),
+        );
+        console.log("✅ Match apagada do Firestore");
+      } catch (error) {
+        console.error("❌ Erro ao apagar match:", error);
+      }
+    }
   };
 
   const forceTimePass = () => {

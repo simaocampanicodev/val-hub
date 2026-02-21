@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { getRankInfo } from '../services/gameService';
 import Card from './ui/Card';
@@ -10,6 +10,33 @@ const Leaderboard = () => {
     const { allUsers, themeMode, setViewProfileId } = useGame();
     const [sortBy, setSortBy] = useState<'mmr' | 'level'>('mmr');
     const [showRankInfoModal, setShowRankInfoModal] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate loading
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 800); // 0.8 seconds loading
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+                <div className="text-center py-20">
+                    <div className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+                    </div>
+                    <h3 className={`text-xl font-bold mb-2 ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
+                        Loading Rankings...
+                    </h3>
+                    <p className={`text-sm ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                        Please wait while we fetch the leaderboard
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     // Filter out bots and sort
     const sortedUsers = [...allUsers]

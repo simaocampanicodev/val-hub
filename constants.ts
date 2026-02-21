@@ -131,16 +131,22 @@ export const RANK_THRESHOLDS = [
 ];
 
 export const QUEST_POOL: Quest[] = [
+  // --- DAILY (6 quests, always include q_daily_win_1, select 3 each day) ---
   { id: 'q_daily_win_1', type: 'WIN_MATCHES', category: 'DAILY', description: 'First Win of the Day', target: 1, xpReward: 50 },
-  { id: 'q_daily_play_1', type: 'PLAY_MATCHES', category: 'DAILY', description: 'Team Player (Play 1)', target: 1, xpReward: 30 },
   { id: 'q_daily_play_3', type: 'PLAY_MATCHES', category: 'DAILY', description: 'Daily Grind (Play 3)', target: 3, xpReward: 100 },
+  { id: 'q_daily_play_5', type: 'PLAY_MATCHES', category: 'DAILY', description: 'Dedicated Player (Play 5)', target: 5, xpReward: 150 },
+  { id: 'q_daily_win_2', type: 'WIN_MATCHES', category: 'DAILY', description: 'Win Streak (Win 2)', target: 2, xpReward: 80 },
   { id: 'q_daily_commend_1', type: 'GIVE_COMMENDS', category: 'DAILY', description: 'Spread Positivity (Commend)', target: 1, xpReward: 20 },
+  { id: 'q_daily_commend_3', type: 'GIVE_COMMENDS', category: 'DAILY', description: 'Good Sport (Commend 3)', target: 3, xpReward: 60 },
 
-  // --- MONTHLY ---
+  // --- MONTHLY (6 quests, select 2 each month) ---
   { id: 'q_monthly_play_10', type: 'PLAY_MATCHES', category: 'MONTHLY', description: 'Monthly Grind (Play 10)', target: 10, xpReward: 400 },
+  { id: 'q_monthly_play_25', type: 'PLAY_MATCHES', category: 'MONTHLY', description: 'Dedication (Play 25)', target: 25, xpReward: 800 },
   { id: 'q_monthly_win_5', type: 'WIN_MATCHES', category: 'MONTHLY', description: 'Monthly Champion (Win 5)', target: 5, xpReward: 500 },
+  { id: 'q_monthly_win_15', type: 'WIN_MATCHES', category: 'MONTHLY', description: 'Elite Performer (Win 15)', target: 15, xpReward: 1200 },
   { id: 'q_monthly_win_20', type: 'WIN_MATCHES', category: 'MONTHLY', description: 'Ranked Demon (Win 20)', target: 20, xpReward: 2000 },
   { id: 'q_monthly_commend_10', type: 'GIVE_COMMENDS', category: 'MONTHLY', description: 'Community Pillar (Commend 10)', target: 10, xpReward: 250 },
+  { id: 'q_monthly_commend_25', type: 'GIVE_COMMENDS', category: 'MONTHLY', description: 'Community Leader (Commend 25)', target: 25, xpReward: 600 },
 
   // --- UNIQUE ---
   { id: 'q_unique_profile', type: 'COMPLETE_PROFILE', category: 'UNIQUE', description: 'Complete Your Profile', target: 1, xpReward: 25 },
@@ -148,4 +154,5 @@ export const QUEST_POOL: Quest[] = [
   { id: 'q_unique_invite_10', type: 'ADD_FRIEND', category: 'UNIQUE', description: 'Squad Leader (Add 10 Friends)', target: 10, xpReward: 1000 },
   { id: 'q_unique_level_5', type: 'REACH_LEVEL', category: 'UNIQUE', description: 'Rising Star (Reach Level 5)', target: 5, xpReward: 500 },
   { id: 'q_unique_level_10', type: 'REACH_LEVEL', category: 'UNIQUE', description: 'Veteran (Reach Level 10)', target: 10, xpReward: 1500 },
+  { id: 'q_unique_level_20', type: 'REACH_LEVEL', category: 'UNIQUE', description: 'Legend (Reach Level 20)', target: 20, xpReward: 3000 },
 ];

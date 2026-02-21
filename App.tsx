@@ -44,7 +44,10 @@ const AppContent = () => {
 
   let content;
 
-  if (currentView === 'queue' && matchState && matchState.phase !== 'FINISHED') {
+  // Priority: Profile view > Match interface > Other views
+  if (currentView === 'profile' && viewProfileId) {
+    content = <Profile />;
+  } else if (currentView === 'queue' && matchState && matchState.phase !== 'FINISHED') {
     content = <MatchInterface />;
   } else if (matchState && matchState.phase === 'FINISHED' && currentView === 'queue') {
     content = <MatchInterface />;

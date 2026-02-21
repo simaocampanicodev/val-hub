@@ -68,7 +68,7 @@ const MatchInterface = () => {
   const isCaptain = matchState.captainA?.id === currentUser.id || matchState.captainB?.id === currentUser.id;
   const isMyTurn = (matchState.turn === 'A' && matchState.captainA?.id === currentUser.id) ||
                    (matchState.turn === 'B' && matchState.captainB?.id === currentUser.id);
-  const isFinished = matchState.phase === MatchPhase.FINISHED;
+  const isFinished = matchState?.phase === MatchPhase.FINISHED;
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
@@ -390,44 +390,73 @@ const MatchInterface = () => {
                             </div>
                         </Card>
 
-                        {/* Pool (Center) */}
+                        {/* Pool or Maps (Center) */}
                         <div className="col-span-6 h-full flex flex-col">
-                            <div className="flex-none mb-2 flex justify-between items-end px-2">
-                                <span className="text-xs uppercase text-zinc-500 tracking-widest">Available Players</span>
-                                <span className="text-xs font-mono text-zinc-500">{matchState.remainingPool.length} Remaining</span>
-                            </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    {matchState.remainingPool.map(player => (
-                                        <button
-                                            key={player.id}
-                                            disabled={!isMyTurn}
-                                            onClick={() => draftPlayer(player)}
-                                            className={`
-                                                flex items-center p-3 rounded-xl border transition-all duration-200 group relative overflow-hidden
-                                                ${isMyTurn 
-                                                    ? 'bg-white/5 border-white/10 hover:border-rose-500 hover:bg-rose-500/10 cursor-pointer shadow-md hover:shadow-rose-500/20' 
-                                                    : `opacity-40 cursor-not-allowed ${themeMode === 'dark' ? 'bg-black/20 border-white/5' : 'bg-black/5 border-black/5'}`}
-                                            `}
-                                        >
-                                            <div className="relative z-10 flex items-center w-full">
-                                                <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-white mr-3 border border-white/10">
-                                                    {player.avatarUrl ? <img src={player.avatarUrl} className="w-full h-full object-cover rounded-full" /> : player.username[0]}
-                                                </div>
-                                                <div className="flex flex-col items-start min-w-0">
-                                                    <span className={`text-sm font-bold truncate w-full text-left ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>{player.username}</span>
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="text-[10px] text-zinc-500 uppercase">{player.primaryRole}</span>
-                                                        <span className="text-[10px] font-mono text-zinc-600 bg-white/5 px-1 rounded">{Math.floor(player.points)}</span>
+                            {/* Show player pool when drafting, show maps when drafting is complete */}
+                            {matchState.remainingPool.length > 0 ? (
+                                <>
+                                    <div className="flex-none mb-2 flex justify-between items-end px-2">
+                                        <span className="text-xs uppercase text-zinc-500 tracking-widest">Available Players</span>
+                                        <span className="text-xs font-mono text-zinc-500">{matchState.remainingPool.length} Remaining</span>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {matchState.remainingPool.map(player => (
+                                                <button
+                                                    key={player.id}
+                                                    disabled={!isMyTurn}
+                                                    onClick={() => draftPlayer(player)}
+                                                    className={`
+                                                        flex items-center p-3 rounded-xl border transition-all duration-200 group relative overflow-hidden
+                                                        ${isMyTurn 
+                                                            ? 'bg-white/5 border-white/10 hover:border-rose-500 hover:bg-rose-500/10 cursor-pointer shadow-md hover:shadow-rose-500/20' 
+                                                            : `opacity-40 cursor-not-allowed ${themeMode === 'dark' ? 'bg-black/20 border-white/5' : 'bg-black/5 border-black/5'}`}
+                                                    `}
+                                                >
+                                                    <div className="relative z-10 flex items-center w-full">
+                                                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-white mr-3 border border-white/10">
+                                                            {player.avatarUrl ? <img src={player.avatarUrl} className="w-full h-full object-cover rounded-full" /> : player.username[0]}
+                                                        </div>
+                                                        <div className="flex flex-col items-start min-w-0">
+                                                            <span className={`text-sm font-bold truncate w-full text-left ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>{player.username}</span>
+                                                            <div className="flex items-center space-x-2">
+                                                                <span className="text-[10px] text-zinc-500 uppercase">{player.primaryRole}</span>
+                                                                <span className="text-[10px] font-mono text-zinc-600 bg-white/5 px-1 rounded">{Math.floor(player.points)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {/* Hover Effect Background */}
+                                                    {isMyTurn && <div className="absolute inset-0 bg-gradient-to-r from-rose-500/0 via-rose-500/0 to-rose-500/5 group-hover:via-rose-500/10 transition-all"></div>}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                /* Map selection when drafting is complete */
+                                <div className="flex-1 flex flex-col items-center justify-center p-4">
+                                    <div className="text-center mb-4">
+                                        <h3 className={`text-xl font-bold mb-2 ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
+                                            All Players Drafted
+                                        </h3>
+                                        <p className={`text-sm ${themeMode === 'dark' ? 'text-zinc-400' : 'text-zinc-600'}`}>
+                                            Ready for map selection phase
+                                        </p>
+                                    </div>
+                                    <div className="w-full max-w-2xl">
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            {MAPS.map((map: string) => (
+                                                <div key={map} className={`relative aspect-video rounded-lg border-2 ${themeMode === 'dark' ? 'border-white/10 bg-white/5' : 'border-black/10 bg-black/5'} flex items-center justify-center overflow-hidden`}>
+                                                    <img src={MAP_IMAGES[map as keyof typeof MAP_IMAGES]} alt={map} className="w-full h-full object-cover rounded-lg opacity-60" />
+                                                    <div className={`absolute inset-0 flex items-center justify-center ${themeMode === 'dark' ? 'bg-black/60' : 'bg-white/60'}`}>
+                                                        <span className="text-sm font-bold text-white drop-shadow-lg">{map}</span>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            {/* Hover Effect Background */}
-                                            {isMyTurn && <div className="absolute inset-0 bg-gradient-to-r from-rose-500/0 via-rose-500/0 to-rose-500/5 group-hover:via-rose-500/10 transition-all"></div>}
-                                        </button>
-                                    ))}
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* Team B (Right) */}
@@ -458,120 +487,80 @@ const MatchInterface = () => {
             {/* --- PHASE: VETO (LOCKED LAYOUT) --- */}
             {matchState.phase === MatchPhase.VETO && (() => {
                 const bannedMaps = matchState.bannedMaps || [];
-                // Get all maps from constants to show complete list
-                const allMaps = MAPS; // Show all maps
+                const allMaps = MAPS;
                 const isLastMap = matchState.remainingMaps.length === 1;
                 const winningMap = isLastMap ? matchState.remainingMaps[0] : null;
+                const isMyTurn = (matchState.turn === 'A' && matchState.captainA?.id === currentUser?.id) || 
+                                   (matchState.turn === 'B' && matchState.captainB?.id === currentUser?.id);
 
                 return (
                     <div className="h-full flex flex-col animate-in fade-in duration-500 overflow-hidden">
-                        {/* "Creating lobby" overlay – shown 2s after map highlight */}
-                        {showWinningMapPhase === 'creating' && winningMap && (
-                            <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
-                                <div className="text-center space-y-6">
-                                    <div className="relative">
-                                        <div className="w-24 h-24 rounded-full bg-emerald-500/20 border-4 border-emerald-500 flex items-center justify-center mx-auto animate-pulse">
-                                            <Check className="w-12 h-12 text-emerald-400" />
-                                        </div>
+                        {/* Header */}
+                        <div className="flex-none p-4 border-b border-white/10">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-xl font-bold mb-1">Map Selection</h2>
+                                    <div className={`text-sm font-medium ${isMyTurn ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                                        {isMyTurn ? 'Your turn to ban' : "Opponent's turn"}
                                     </div>
-                                    <h2 className="text-4xl font-display font-bold text-white tracking-tighter">
-                                        {winningMap}
-                                    </h2>
-                                    <p className="text-xl text-zinc-400 uppercase tracking-widest animate-pulse">
-                                        Creating lobby...
-                                    </p>
                                 </div>
-                            </div>
-                        )}
-
-                        <div className="flex-none h-24 flex flex-col justify-center items-center text-center space-y-1 mb-2">
-                            <h2 className={`text-3xl font-display font-bold uppercase tracking-widest ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>Map Veto</h2>
-                            <div className="h-6 flex items-center justify-center w-full">
-                                {isMyTurn && !isLastMap ? (
-                                    <div className="px-4 py-0.5 bg-red-500 text-white text-[10px] uppercase font-bold rounded-full animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)]">
-                                        BAN A MAP
-                                    </div>
-                                ) : isLastMap ? (
-                                    <div className="px-4 py-0.5 bg-emerald-500 text-white text-[10px] uppercase font-bold rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]">
-                                        MAP SELECTED
-                                    </div>
-                                ) : (
-                                    <div className="px-4 py-0.5 bg-zinc-600 text-white text-[10px] uppercase font-bold rounded-full opacity-70">
-                                        OPPONENT BANNING...
-                                    </div>
-                                )}
+                                <div className="text-right">
+                                    <div className="text-xs text-zinc-400 uppercase tracking-wider">Maps Remaining</div>
+                                    <div className="text-sm font-bold">{matchState.remainingMaps.length}</div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Veto Grid: Show all maps (remaining + banned) */}
-                        <div className="flex-1 p-4 flex items-center justify-center overflow-hidden">
-                            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 w-full max-w-5xl">
-                                {allMaps.map(map => {
-                                    const bannedInfo = bannedMaps.find(b => b.map === map);
+                        {/* Map Grid */}
+                        <div className="flex-1 p-4 overflow-y-auto">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+                                {allMaps.map((map) => {
+                                    const bannedInfo = bannedMaps.find((b: any) => b.map === map);
                                     const isBanned = !!bannedInfo;
                                     const isRemaining = matchState.remainingMaps.includes(map);
-                                    const isWinning = map === winningMap && (showWinningMapPhase === 'highlight' || showWinningMapPhase === 'creating');
+                                    const isWinning = map === winningMap;
 
                                     return (
                                         <div
                                             key={map}
                                             className={`
-                                                relative group overflow-hidden rounded-xl border-2 transition-all duration-300
-                                                aspect-[16/9] flex flex-col items-center justify-center
+                                                relative aspect-video rounded-xl border-2 transition-all duration-300 overflow-hidden group
                                                 ${isBanned 
-                                                    ? 'border-red-500 bg-red-950/50 cursor-not-allowed grayscale shadow-[inset_0_0_0_2px_rgba(239,68,68,0.5)]' 
+                                                    ? 'border-red-500/50 bg-red-950/30 cursor-not-allowed' 
                                                     : isWinning
-                                                    ? 'border-emerald-500 ring-4 ring-emerald-500/50 cursor-default shadow-[0_0_20px_rgba(16,185,129,0.4)] animate-in zoom-in duration-300'
+                                                    ? 'border-emerald-500 ring-2 ring-emerald-500/50'
                                                     : isMyTurn && isRemaining
-                                                    ? 'border-zinc-500/30 hover:border-red-500 hover:scale-105 cursor-pointer shadow-lg'
-                                                    : isRemaining
-                                                    ? 'border-zinc-500/20 opacity-70 cursor-not-allowed'
-                                                    : 'border-transparent opacity-40 cursor-not-allowed'}
+                                                    ? 'border-white/20 hover:border-rose-500 hover:scale-105 cursor-pointer'
+                                                    : 'border-white/10 opacity-50'}
                                             `}
                                         >
-                                            {!isBanned && isRemaining && (
-                                                <button
-                                                    disabled={!isMyTurn}
-                                                    onClick={() => vetoMap(map)}
-                                                    className="absolute inset-0 w-full h-full z-10"
-                                                />
-                                            )}
-                                            
                                             <img 
-                                                src={MAP_IMAGES[map]} 
+                                                src={MAP_IMAGES[map as keyof typeof MAP_IMAGES]} 
                                                 alt={map}
-                                                className={`absolute inset-0 w-full h-full object-cover transition-opacity ${
-                                                    isBanned ? 'opacity-25' : isWinning ? 'opacity-85' : 'opacity-60 group-hover:opacity-40'
-                                                }`}
+                                                className={`absolute inset-0 w-full h-full object-cover ${isBanned ? 'opacity-20 grayscale' : 'opacity-60'}`}
                                             />
-                                            <div className={`absolute inset-0 transition-colors ${
-                                                isBanned 
-                                                    ? 'bg-red-900/85' 
-                                                    : isWinning
-                                                    ? 'bg-emerald-900/30'
-                                                    : 'bg-black/60 group-hover:bg-red-900/60'
-                                            }`}></div>
-
-                                            <div className="relative z-10 flex flex-col items-center px-2">
-                                                {isWinning ? (
+                                            <div className={`absolute inset-0 flex flex-col items-center justify-center ${isBanned ? 'bg-red-900/80' : 'bg-black/40'}`}>
+                                                {isBanned ? (
                                                     <>
-                                                        <Check className="w-10 h-10 mb-1 text-emerald-400 animate-pulse drop-shadow-lg" />
-                                                        <span className="text-sm font-display tracking-widest uppercase font-bold text-white shadow-black drop-shadow-md text-center">{map}</span>
-                                                        <span className="text-[10px] text-emerald-300 mt-0.5 uppercase font-bold">Selected</span>
+                                                        <span className="text-xs font-bold text-red-400 uppercase tracking-wider">BANNED</span>
+                                                        <span className="text-[10px] text-red-300/70 mt-1">by {bannedInfo.bannedByName}</span>
                                                     </>
-                                                ) : isBanned ? (
+                                                ) : isWinning ? (
                                                     <>
-                                                        <div className="absolute top-1 left-1 right-1 h-5 bg-red-600/90 flex items-center justify-center rounded">
-                                                            <span className="text-[10px] font-bold text-white uppercase tracking-wider">BANNED</span>
-                                                        </div>
-                                                        <Ban className="w-8 h-8 mb-1 text-red-400 drop-shadow-lg" />
-                                                        <span className="text-xs font-display tracking-widest uppercase font-bold text-white shadow-black drop-shadow-md text-center">{map}</span>
-                                                        <span className="text-[10px] text-red-300 mt-1 text-center font-medium">by {bannedInfo.bannedByName}</span>
+                                                        <span className="text-lg font-bold text-emerald-400">{map}</span>
+                                                        <span className="text-xs text-emerald-300/70 mt-1">Selected</span>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Ban className={`w-6 h-6 mb-1 ${isMyTurn && isRemaining ? 'text-zinc-300 group-hover:text-white group-hover:scale-110 transition-transform' : 'text-zinc-500'}`} />
-                                                        <span className={`text-xs font-display tracking-widest uppercase font-bold text-white shadow-black drop-shadow-md`}>{map}</span>
+                                                        <span className="text-sm font-bold text-white drop-shadow-lg">{map}</span>
+                                                        {isMyTurn && isRemaining && (
+                                                            <button
+                                                                onClick={() => vetoMap(map)}
+                                                                className="mt-2 px-3 py-1 bg-rose-500 hover:bg-rose-400 text-white text-xs font-bold rounded-full transition-all opacity-0 group-hover:opacity-100"
+                                                            >
+                                                                BAN
+                                                            </button>
+                                                        )}
                                                     </>
                                                 )}
                                             </div>
@@ -580,6 +569,24 @@ const MatchInterface = () => {
                                 })}
                             </div>
                         </div>
+
+                        {/* Creating lobby overlay */}
+                        {showWinningMapPhase === 'creating' && winningMap && (
+                            <div className="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+                                <div className="text-center space-y-6">
+                                    <div className="relative">
+                                        <img src={MAP_IMAGES[winningMap]} alt={winningMap} className="w-32 h-20 rounded-lg object-cover shadow-2xl" />
+                                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+                                            <Check className="w-4 h-4 text-white" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="text-2xl font-bold text-white mb-2">{winningMap}</div>
+                                        <div className="text-emerald-400 text-sm font-medium">Map Selected</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             })()}
@@ -961,7 +968,7 @@ const MatchInterface = () => {
             )}
 
             {/* --- PHASE: FINISHED (SCROLLABLE) --- */}
-            {matchState.phase === MatchPhase.FINISHED && (
+            {isFinished && matchState && (
                 <div className="h-full overflow-y-auto custom-scrollbar flex flex-col items-center space-y-12 animate-in zoom-in duration-500 pt-12 pb-24 w-full">
                         <div className="text-center">
                             <Trophy className={`w-24 h-24 mx-auto ${matchState.winner === userTeam ? 'text-emerald-500' : 'text-rose-500'}`} />

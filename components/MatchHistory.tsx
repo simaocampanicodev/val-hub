@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import Card from './ui/Card';
 import { MatchRecord } from '../types';
@@ -8,6 +8,33 @@ const MatchHistory = () => {
     const { matchHistory, currentUser, themeMode } = useGame();
     const [filter, setFilter] = useState<'all' | 'mine'>('mine');
     const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate loading
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1000); // 1 second loading
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+                <div className="text-center py-20">
+                    <div className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                    </div>
+                    <h3 className={`text-xl font-bold mb-2 ${themeMode === 'dark' ? 'text-white' : 'text-black'}`}>
+                        Loading Match History...
+                    </h3>
+                    <p className={`text-sm ${themeMode === 'dark' ? 'text-zinc-500' : 'text-zinc-600'}`}>
+                        Please wait while we fetch your match records
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     const filteredHistory = matchHistory.filter(match => {
         if (filter === 'all') return true;
