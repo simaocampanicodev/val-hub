@@ -2693,15 +2693,33 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
   );
 
   const resetDailyQuests = async () => {
+    const now = Date.now();
+    const dailyQuests = QUEST_POOL.filter(q => q.category === 'DAILY');
+    const monthlyQuests = QUEST_POOL.filter(q => q.category === 'MONTHLY');
+    const uniqueQuests = QUEST_POOL.filter(q => q.category === 'UNIQUE');
+
+    const pick = (arr: typeof dailyQuests, n: number) =>
+      [...arr].sort(() => Math.random() - 0.5).slice(0, n)
+        .map(q => ({ questId: q.id, progress: 0, completed: false, claimed: false }));
+
+    const otherDailyQuests = dailyQuests.filter(q => q.id !== 'q_daily_win_1');
+
     await Promise.all(
-      allUsers.filter(u => !u.isBot).map(u =>
-        updateDoc(doc(db, COLLECTIONS.USERS, u.id), {
-          active_quests: [],
-          lastDailyQuestGeneration: 0,
-          lastMonthlyQuestGeneration: 0,
-        })
-      )
+      allUsers.filter(u => !u.isBot).map(u => {
+        const newQuests = [
+          ...pick(otherDailyQuests, 2),
+          { questId: 'q_daily_win_1', progress: 0, completed: false, claimed: false },
+          ...pick(monthlyQuests, 5),
+          ...uniqueQuests.map(q => ({ questId: q.id, progress: 0, completed: false, claimed: false })),
+        ];
+        return updateDoc(doc(db, COLLECTIONS.USERS, u.id), {
+          active_quests: newQuests,
+          lastDailyQuestGeneration: now,
+          lastMonthlyQuestGeneration: now,
+        });
+      })
     );
+
     generateQuestsIfNeeded(true);
     showToast('Quests reset for all users!', 'success');
   };
