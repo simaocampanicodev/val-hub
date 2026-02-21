@@ -1557,7 +1557,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
 
         next = [
           ...newDailies,
-          ...pick(monthlyQuests, 2),
+          ...pick(monthlyQuests, 5),
           ...currentUniqueQuests,
         ];
         // Add missing unique quests
@@ -1612,7 +1612,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
           const toAdd = monthlyQuests
             .filter((q) => !existingMonthlyIds.includes(q.id))
             .sort(() => Math.random() - 0.5)
-            .slice(0, 2 - existingMonthlyIds.length);
+            .slice(0, 4 - existingMonthlyIds.length);
           toAdd.forEach((q) =>
             next.push({
               questId: q.id,

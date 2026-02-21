@@ -139,7 +139,7 @@ export const QUEST_POOL: Quest[] = [
   { id: 'q_daily_commend_1', type: 'GIVE_COMMENDS', category: 'DAILY', description: 'Spread Positivity (Commend)', target: 1, xpReward: 20 },
   { id: 'q_daily_commend_3', type: 'GIVE_COMMENDS', category: 'DAILY', description: 'Good Sport (Commend 3)', target: 3, xpReward: 60 },
 
-  // --- MONTHLY (6 quests, select 2 each month) ---
+  // --- MONTHLY (select 4 each month) ---
   { id: 'q_monthly_play_10', type: 'PLAY_MATCHES', category: 'MONTHLY', description: 'Monthly Grind (Play 10)', target: 10, xpReward: 400 },
   { id: 'q_monthly_play_25', type: 'PLAY_MATCHES', category: 'MONTHLY', description: 'Dedication (Play 25)', target: 25, xpReward: 800 },
   { id: 'q_monthly_win_5', type: 'WIN_MATCHES', category: 'MONTHLY', description: 'Monthly Champion (Win 5)', target: 5, xpReward: 500 },
