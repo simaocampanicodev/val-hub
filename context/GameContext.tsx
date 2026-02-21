@@ -2692,8 +2692,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
     [hasDashboardAccess, showToast],
   );
 
-  const resetDailyQuests = () => {
+  const resetDailyQuests = async () => {
+    await Promise.all(
+      allUsers.filter(u => !u.isBot).map(u =>
+        updateDoc(doc(db, COLLECTIONS.USERS, u.id), {
+          active_quests: [],
+          lastDailyQuestGeneration: 0,
+          lastMonthlyQuestGeneration: 0,
+        })
+      )
+    );
     generateQuestsIfNeeded(true);
+    showToast('Quests reset for all users!', 'success');
   };
 
   const updateTicket = useCallback(
