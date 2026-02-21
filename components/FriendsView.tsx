@@ -24,7 +24,7 @@ const FriendsView = () => {
     const {
         currentUser, allUsers, sendFriendRequest, acceptFriendRequest,
         rejectFriendRequest, removeFriend, themeMode, setViewProfileId,
-        onlineUserIds, createNotification,
+        onlineUserIds, createNotification, clearNotificationsByType,
     } = useGame();
     const [searchTerm, setSearchTerm] = useState('');
     const [showRemoveModal, setShowRemoveModal] = useState<string | null>(null);
@@ -33,6 +33,13 @@ const FriendsView = () => {
     const [messages, setMessages] = useState<ChatMsg[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Auto-clear chat notifications when opening a chat
+    useEffect(() => {
+        if (selectedChat) {
+            clearNotificationsByType('FRIEND_MESSAGE', selectedChat);
+        }
+    }, [selectedChat, clearNotificationsByType]);
 
     // Simulate loading
     useEffect(() => {

@@ -57,6 +57,11 @@ const Profile = () => {
   const [agentError, setAgentError] = useState<string | null>(null);
   const [activeBadge, setActiveBadge] = useState<BadgeType | null>(null);
 
+  // ⭐ NEW: Edit mode (profile is read-only by default)
+  const [isEditing, setIsEditing] = useState(false);
+  // Reset editing mode when switching profiles
+  useEffect(() => { setIsEditing(false); }, [profileUser.id]);
+
   // ⭐ NOVO: Estado para loading do upload de avatar e banner
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
@@ -769,7 +774,7 @@ const Profile = () => {
             }}
           ></div>
           <div className={`absolute inset-0 ${themeMode === 'dark' ? 'bg-gradient-to-b from-transparent via-black/40 to-black/90' : 'bg-gradient-to-b from-transparent via-white/20 to-white/60'}`}></div>
-          {isOwnProfile && (
+          {isOwnProfile && isEditing && (
             <div className="absolute top-4 right-4 z-20">
               <input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={handleBannerChange} />
               <button
@@ -799,7 +804,7 @@ const Profile = () => {
                 >
                   <TrackerNetworkIcon className="w-6 h-6 text-red-300" />
                 </a>
-                {isOwnProfile && (
+                {isOwnProfile && isEditing && (
                   <button
                     onClick={(e) => { e.stopPropagation(); openSocialModal('tracker'); }}
                     className="absolute -top-2 -right-2 bg-white/20 rounded-full p-1.5 border border-white/30 hover:bg-white/40 transition-all shadow-lg"
@@ -809,7 +814,7 @@ const Profile = () => {
                   </button>
                 )}
               </div>
-            ) : isOwnProfile ? (
+            ) : isOwnProfile && isEditing ? (
               <button
                 onClick={(e) => { e.stopPropagation(); openSocialModal('tracker'); }}
                 className="flex items-center justify-center w-12 h-12 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-110"
@@ -832,7 +837,7 @@ const Profile = () => {
                 >
                   <TwitchOfficialIcon className="w-6 h-6 text-purple-300" />
                 </a>
-                {isOwnProfile && (
+                {isOwnProfile && isEditing && (
                   <button
                     onClick={(e) => { e.stopPropagation(); openSocialModal('twitch'); }}
                     className="absolute -top-2 -right-2 bg-white/20 rounded-full p-1.5 border border-white/30 hover:bg-white/40 transition-all shadow-lg"
@@ -842,7 +847,7 @@ const Profile = () => {
                   </button>
                 )}
               </div>
-            ) : isOwnProfile ? (
+            ) : isOwnProfile && isEditing ? (
               <button
                 onClick={(e) => { e.stopPropagation(); openSocialModal('twitch'); }}
                 className="flex items-center justify-center w-12 h-12 rounded-full bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-110"
@@ -862,7 +867,7 @@ const Profile = () => {
                   <span className="text-4xl font-display font-bold text-white/20">{profileUser.username.substring(0, 2).toUpperCase()}</span>
                 )}
               </div>
-              {isOwnProfile && (
+              {isOwnProfile && isEditing && (
                 <>
                   <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
                   <button
@@ -990,14 +995,7 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Admin Reset Button */}
-            {isAdmin && isOwnProfile && (
-              <div className="ml-auto mb-2">
-                <Button variant="danger" size="sm" onClick={handleResetSeason}>
-                  [Admin] Reset Season
-                </Button>
-              </div>
-            )}
+            {/* Admin Reset Button - moved to bottom of page */}
           </div>
         </div>
 
@@ -1029,7 +1027,7 @@ const Profile = () => {
                   <UserIcon className="w-5 h-5" />
                   <h3 className="text-sm font-bold uppercase tracking-widest">Player Identity</h3>
                 </div>
-                {isOwnProfile && isIdentityDirty && (
+                {isOwnProfile && isEditing && isIdentityDirty && (
                   <Button size="sm" onClick={handleSaveIdentity} className="animate-in fade-in zoom-in">
                     Save Identity
                   </Button>
@@ -1042,18 +1040,18 @@ const Profile = () => {
                   <input
                     type="text"
                     value={localUsername}
-                    readOnly={!isOwnProfile}
-                    onChange={(e) => isOwnProfile && setLocalUsername(e.target.value)}
-                    className={`w-full rounded-xl p-3 border outline-none ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'} ${isOwnProfile ? 'focus:border-rose-500' : 'cursor-default opacity-70'}`}
+                    readOnly={!isOwnProfile || !isEditing}
+                    onChange={(e) => isOwnProfile && isEditing && setLocalUsername(e.target.value)}
+                    className={`w-full rounded-xl p-3 border outline-none ${themeMode === 'dark' ? 'bg-black/20 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'} ${isOwnProfile && isEditing ? 'focus:border-rose-500' : 'cursor-default opacity-70'}`}
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-zinc-500 uppercase mb-2">Primary Role</label>
                   <select
                     value={localPrimaryRole}
-                    disabled={!isOwnProfile}
-                    onChange={(e) => isOwnProfile && setLocalPrimaryRole(e.target.value as GameRole)}
-                    className={`w-full rounded-xl p-3 border outline-none appearance-none ${themeMode === 'dark' ? 'bg-zinc-900 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'} ${!isOwnProfile ? 'cursor-default opacity-70' : 'focus:border-rose-500'}`}
+                    disabled={!isOwnProfile || !isEditing}
+                    onChange={(e) => isOwnProfile && isEditing && setLocalPrimaryRole(e.target.value as GameRole)}
+                    className={`w-full rounded-xl p-3 border outline-none appearance-none ${themeMode === 'dark' ? 'bg-zinc-900 border-white/10 text-white' : 'bg-zinc-100 border-zinc-200 text-black'} ${!isOwnProfile || !isEditing ? 'cursor-default opacity-70' : 'focus:border-rose-500'}`}
                   >
                     {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
@@ -1067,8 +1065,8 @@ const Profile = () => {
               )}
             </Card>
 
-            {/* Riot ID Linking (Own Profile Only) */}
-            {isOwnProfile && (
+            {/* Riot ID Linking (Own Profile + Edit Mode Only) */}
+            {isOwnProfile && isEditing && (
               <Card>
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center space-x-2 text-zinc-400">
@@ -1140,7 +1138,7 @@ const Profile = () => {
             <Card className="h-auto">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Agent Pool</h3>
-                {isOwnProfile && !isEditingAgents && (
+                {isOwnProfile && isEditing && !isEditingAgents && (
                   <Button
                     size="sm"
                     variant="ghost"
@@ -1300,6 +1298,36 @@ const Profile = () => {
             ))}
           </div>
         </Card>
+
+        {/* ⭐ Edit Profile + Admin Reset Season - Bottom of page */}
+        {isOwnProfile && (
+          <div className="flex items-center justify-center gap-4 pt-4 pb-8">
+            {!isEditing ? (
+              <Button
+                size="md"
+                onClick={() => setIsEditing(true)}
+                className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white font-bold text-sm uppercase tracking-wider shadow-lg hover:shadow-rose-500/20 transition-all duration-300"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit Profile
+              </Button>
+            ) : (
+              <Button
+                size="md"
+                onClick={() => setIsEditing(false)}
+                className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm uppercase tracking-wider shadow-lg hover:shadow-emerald-500/20 transition-all duration-300"
+              >
+                <Save className="w-4 h-4" />
+                Close Editing
+              </Button>
+            )}
+            {isAdmin && (
+              <Button variant="danger" size="sm" onClick={handleResetSeason} className="opacity-60 hover:opacity-100">
+                [Admin] Reset Season
+              </Button>
+            )}
+          </div>
+        )}
 
       </div>
     </>

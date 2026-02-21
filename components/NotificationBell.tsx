@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, X, Check, CheckCheck, Swords, Users, UserCheck, UserX, Trophy, Star, Heart, MessageCircle } from 'lucide-react';
+import { Bell, X, Check, CheckCheck, Swords, Users, UserCheck, UserX, UserMinus, UserPlus, Trophy, Star, Heart, MessageCircle, Trash2 } from 'lucide-react';
 import { useGame } from '../context/GameContext';
 import { AppNotification, NotificationType } from '../types';
 
@@ -8,6 +8,8 @@ const TYPE_ICON: Record<NotificationType, React.ReactNode> = {
   FRIEND_REQUEST_RECEIVED: <Users className="w-4 h-4 text-blue-400" />,
   FRIEND_REQUEST_ACCEPTED: <UserCheck className="w-4 h-4 text-emerald-400" />,
   FRIEND_REQUEST_REJECTED: <UserX className="w-4 h-4 text-red-400" />,
+  FRIEND_REMOVED: <UserMinus className="w-4 h-4 text-orange-400" />,
+  FRIEND_ADDED: <UserPlus className="w-4 h-4 text-teal-400" />,
   MATCH_ENDED: <Swords className="w-4 h-4 text-rose-400" />,
   COMMEND_RECEIVED: <Star className="w-4 h-4 text-yellow-400" />,
   SUGGESTION_LIKED: <Heart className="w-4 h-4 text-pink-400" />,
@@ -19,6 +21,8 @@ const TYPE_BG: Record<NotificationType, string> = {
   FRIEND_REQUEST_RECEIVED: 'bg-blue-500/10',
   FRIEND_REQUEST_ACCEPTED: 'bg-emerald-500/10',
   FRIEND_REQUEST_REJECTED: 'bg-red-500/10',
+  FRIEND_REMOVED: 'bg-orange-500/10',
+  FRIEND_ADDED: 'bg-teal-500/10',
   MATCH_ENDED: 'bg-rose-500/10',
   COMMEND_RECEIVED: 'bg-yellow-500/10',
   SUGGESTION_LIKED: 'bg-pink-500/10',
@@ -34,7 +38,7 @@ function formatRelative(ts: number) {
 }
 
 const NotificationBell: React.FC = () => {
-  const { notifications, markNotificationRead, markAllNotificationsRead, themeMode } = useGame();
+  const { notifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications, themeMode } = useGame();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -94,6 +98,16 @@ const NotificationBell: React.FC = () => {
                 >
                   <CheckCheck className="w-3 h-3" />
                   All read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  onClick={clearAllNotifications}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium text-zinc-400 hover:text-red-400 transition-colors"
+                  title="Clear all notifications"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Clear
                 </button>
               )}
               <button

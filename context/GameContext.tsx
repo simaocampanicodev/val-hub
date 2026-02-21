@@ -154,6 +154,8 @@ export interface GameContextType {
   notifications: AppNotification[];
   markNotificationRead: (id: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
+  clearNotificationsByType: (type: AppNotification['type'], relatedUserId?: string) => Promise<void>;
   createNotification: (targetUserId: string, type: AppNotification['type'], message: string, data?: AppNotification['data']) => Promise<void>;
 }
 
@@ -232,6 +234,8 @@ export const GameContext = React.createContext<GameContextType>({
   notifications: [],
   markNotificationRead: async () => { },
   markAllNotificationsRead: async () => { },
+  clearAllNotifications: async () => { },
+  clearNotificationsByType: async () => { },
   createNotification: async () => { },
 });
 
@@ -301,6 +305,25 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
     const unread = notifications.filter(n => !n.read);
     await Promise.all(unread.map(n =>
       updateDoc(doc(db, 'notifications', currentUser.id, 'items', n.id), { read: true })
+    ));
+  }, [currentUser.id, notifications]);
+
+  const clearAllNotifications = useCallback(async () => {
+    if (!currentUser.id || currentUser.id === 'user-1') return;
+    await Promise.all(notifications.map(n =>
+      deleteDoc(doc(db, 'notifications', currentUser.id, 'items', n.id))
+    ));
+  }, [currentUser.id, notifications]);
+
+  const clearNotificationsByType = useCallback(async (type: AppNotification['type'], relatedUserId?: string) => {
+    if (!currentUser.id || currentUser.id === 'user-1') return;
+    const toDelete = notifications.filter(n => {
+      if (n.type !== type) return false;
+      if (relatedUserId && n.data && (n.data as any).fromUserId !== relatedUserId) return false;
+      return true;
+    });
+    await Promise.all(toDelete.map(n =>
+      deleteDoc(doc(db, 'notifications', currentUser.id, 'items', n.id))
     ));
   }, [currentUser.id, notifications]);
 
@@ -764,6 +787,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
           timestamp: d.timestamp ?? 0,
           reply: d.reply || undefined,
           status: d.status || "open",
+          likes: d.likes || [],
+          category: d.category || undefined,
+          deleted: !!d.deleted,
         };
       });
       setTickets(list);
@@ -2311,6 +2337,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
 
       console.log("✅ Friend request enviado com sucesso!");
       showToast("Friend request sent!", "success");
+      // Notify the target user about the friend request
+      createNotification(toId, 'FRIEND_REQUEST_RECEIVED', `${currentUser.username} sent you a friend request!`, { fromUserId: currentUser.id });
     } catch (error: any) {
       console.error("❌ Erro ao enviar friend request:", error);
       console.error("❌ Erro código:", error.code);
@@ -2446,6 +2474,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
 
       console.log("✅ Amigo removido");
       showToast("Friend removed", "info");
+      // Notify the removed friend
+      createNotification(friendId, 'FRIEND_REMOVED', `${currentUser.username} removed you from their friends list.`);
     } catch (error: any) {
       console.error("❌ Erro ao remover amigo:", error);
       showToast(error.message || "Error removing friend", "error");
@@ -2751,6 +2781,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({
         notifications,
         markNotificationRead,
         markAllNotificationsRead,
+        clearAllNotifications,
+        clearNotificationsByType,
         createNotification,
       }}
     >
