@@ -431,8 +431,8 @@ const Profile = () => {
         setSocialError('Link cannot be empty');
         return;
       }
-      if (!v.toLowerCase().includes('tracker')) {
-        setSocialError('Link must contain the word "tracker"');
+      if (!v.toLowerCase().includes('https://tracker.gg/valorant/profile')) {
+        setSocialError('Link must contain the word "https://tracker.gg/valorant/profile"');
         return;
       }
       try {
@@ -449,8 +449,8 @@ const Profile = () => {
         setSocialError('Link cannot be empty');
         return;
       }
-      if (!v.toLowerCase().includes('twitch')) {
-        setSocialError('Link must contain the word "twitch"');
+      if (!v.toLowerCase().includes('https://twitch.tv/')) {
+        setSocialError('Link must contain the word "https://twitch.tv/"');
         return;
       }
       try {
