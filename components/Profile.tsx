@@ -1081,9 +1081,14 @@ const Profile = () => {
                 {profileUser.riotId && !isLinkingRiot ? (
                   <div className={`flex items-center justify-between p-4 rounded-xl border ${themeMode === 'dark' ? 'bg-white/5 border-white/5' : 'bg-black/5 border-black/5'}`}>
                     <span className={`${themeMode === 'dark' ? 'text-white' : 'text-zinc-900'} font-bold text-lg`}>{profileUser.riotId}<span className="text-zinc-500">#{profileUser.riotTag}</span></span>
-                    <span className="text-xs text-emerald-500 font-bold uppercase flex items-center bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                      <CheckCircle className="w-3 h-3 ml-1" /> Verified
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-emerald-500 font-bold uppercase flex items-center bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                        <CheckCircle className="w-3 h-3 ml-1" /> Verified
+                      </span>
+                      <Button size="sm" variant="ghost" onClick={() => { setRiotIdInput(profileUser.riotId || ''); setRiotTagInput(profileUser.riotTag || ''); setIsLinkingRiot(true); }}>
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   isLinkingRiot ? (
